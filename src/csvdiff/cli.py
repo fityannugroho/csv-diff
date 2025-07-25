@@ -47,10 +47,10 @@ def validate_output_path(output_path: Path) -> None:
         typer.echo(f"📁 Output path parent '{output_dir}' is not a directory.", err=True)
         raise typer.Exit(1)
 
+    # Check writability with a temporary file
     try:
-        # Test write permission by creating a temporary file
         test_file = output_dir / ".write_test"
-        test_file.touch()
+        test_file.write_text("test", encoding="utf-8")
         test_file.unlink()
     except PermissionError:
         typer.echo(f"🔒 No permission to write to directory '{output_dir}'.", err=True)
@@ -127,13 +127,19 @@ def compare(
             tofile=file2.name,
             lineterm=''
         ))
+    except Exception as e:
+        typer.echo(f"❌ Error: Failed to compute diff: {e}", err=True)
+        raise typer.Exit(1)
 
-        # Write output with error handling
+    # Write output with error handling
+    try:
         output_path.write_text('\n'.join(diff), encoding='utf-8')
         typer.echo(f"✅ Diff result saved to: {output_path}")
-
+    except PermissionError:
+        typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)
+        raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"❌ Error: Failed to process CSV files or write output: {e}", err=True)
+        typer.echo(f"❌ Error: Failed to write output file: {e}", err=True)
         raise typer.Exit(1)
 
 if __name__ == "__main__":

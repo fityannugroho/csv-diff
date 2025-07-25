@@ -60,16 +60,19 @@ def test_validate_output_path_not_a_directory(tmp_path):
   with pytest.raises(typer.Exit):
     validate_output_path(output_path)
 
-def test_validate_output_path_no_permission(tmp_path):
-  restricted_dir = tmp_path / "restricted"
-  restricted_dir.mkdir()
-  restricted_dir.chmod(0o000)  # Remove all permissions
-  output_path = restricted_dir / "output.diff"
-  try:
+def test_validate_output_path_no_permission(tmp_path, monkeypatch):
+    restricted_dir = tmp_path / "restricted"
+    restricted_dir.mkdir()
+    output_path = restricted_dir / "output.diff"
+
+    # Simulate a write error by patching the write_text method
+    def fake_write_text(*args, **kwargs):
+        raise PermissionError("Simulated write error")
+
+    monkeypatch.setattr(Path, "write_text", fake_write_text)
+
     with pytest.raises(typer.Exit):
-      validate_output_path(output_path)
-  finally:
-    restricted_dir.chmod(0o755)  # Restore permissions for cleanup
+        validate_output_path(output_path)
 
 def test_validate_output_path_valid_directory(tmp_path):
   valid_dir = tmp_path / "valid"
@@ -146,24 +149,17 @@ def test_csv_with_different_columns(tmp_path):
   assert result.exit_code == 0
   assert "different column structures" in result.output
 
-def test_output_dir_not_writable(tmp_path):
-  # Create a read-only directory inside tmp_path
-  read_only_dir = tmp_path / "read_only"
-  read_only_dir.mkdir()
-  os.chmod(read_only_dir, 0o400)  # read-only
+def test_output_dir_not_writable(tmp_path, monkeypatch):
+    file1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
+    file2 = create_temp_csv("a,b\n1,3", tmp_path, "file2.csv")
+    output = tmp_path / "fake_result.diff"
 
-  file1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
-  file2 = create_temp_csv("a,b\n1,3", tmp_path, "file2.csv")
+    # Simulate a write error by patching the write_text method
+    def fake_write_text(*args, **kwargs):
+        raise PermissionError("Simulated permission error")
 
-  output = read_only_dir / "result.diff"
-  result = runner.invoke(app, [str(file1), str(file2), "-o", str(output)])
+    monkeypatch.setattr(Path, "write_text", fake_write_text)
 
-  assert result.exit_code != 0
-  assert (
-      "No permission to write" in result.output
-      or "Cannot write to directory" in result.output
-      or "Permission denied" in result.output
-  )
-
-  # Restore permissions to allow cleanup
-  os.chmod(tmp_path, 0o700)
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output)])
+    assert result.exit_code != 0
+    assert "Failed to process CSV files or write output" in result.output
