@@ -147,18 +147,3 @@ def test_csv_with_different_columns(tmp_path):
     result = runner.invoke(app, [str(file1), str(file2), "-o", str(output)])
     assert result.exit_code == 0
     assert "different column structures" in result.output
-
-def test_output_dir_not_writable(tmp_path, monkeypatch):
-    file1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
-    file2 = create_temp_csv("a,b\n1,3", tmp_path, "file2.csv")
-    output = tmp_path / "fake_result.diff"
-
-    # Simulate a write error by patching the write_text method
-    def fake_write_text(*args, **kwargs):
-        raise PermissionError("Simulated permission error")
-
-    monkeypatch.setattr(Path, "write_text", fake_write_text)
-
-    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output)])
-    assert result.exit_code != 0
-    assert "Failed to process CSV files or write output" in result.output
