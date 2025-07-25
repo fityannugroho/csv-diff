@@ -63,7 +63,7 @@ def validate_output_path(output_path: Path) -> None:
 def compare(
     file1: Path = typer.Argument(..., help="Path to the first CSV file."),
     file2: Path = typer.Argument(..., help="Path to the second CSV file."),
-    output: Path = typer.Option(None, "--output", "-o", help="Specify the output .diff file name."),
+    output: str = typer.Option(None, "--output", "-o", help="Specify the output file name."),
 ):
     """
     Compare two CSV files and save the result to a .diff file.
@@ -74,10 +74,16 @@ def compare(
 
     # Determine output path and validate
     if output is None:
-        default_name = f"diff_{file1.stem}_vs_{file2.stem}.diff"
-        output = Path(default_name)
+        output = "result"
+    output_path = Path(f"{output}.diff")
 
-    validate_output_path(output)
+    # Ensure no duplicate filenames
+    counter = 1
+    while output_path.exists():
+        output_path = Path(f"{output} ({counter}).diff")
+        counter += 1
+
+    validate_output_path(output_path)
 
     try:
         # Read CSV files with error handling
@@ -123,8 +129,8 @@ def compare(
         ))
 
         # Write output with error handling
-        output.write_text('\n'.join(diff), encoding='utf-8')
-        typer.echo(f"✅ Diff result saved to: {output}")
+        output_path.write_text('\n'.join(diff), encoding='utf-8')
+        typer.echo(f"✅ Diff result saved to: {output_path}")
 
     except Exception as e:
         typer.echo(f"❌ Error: Failed to process CSV files or write output: {e}", err=True)
