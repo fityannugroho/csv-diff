@@ -118,8 +118,8 @@ def compare(
         df1_sorted = df1.sort_values(by=df1.columns.tolist()).reset_index(drop=True)
         df2_sorted = df2.sort_values(by=df2.columns.tolist()).reset_index(drop=True)
 
-        lines1 = df1_sorted.astype(str).apply(lambda row: ','.join(row), axis=1).tolist()
-        lines2 = df2_sorted.astype(str).apply(lambda row: ','.join(row), axis=1).tolist()
+        lines1 = df1_sorted.to_csv(index=False, header=False).splitlines()
+        lines2 = df2_sorted.to_csv(index=False, header=False).splitlines()
 
         diff = list(unified_diff(
             lines1, lines2,

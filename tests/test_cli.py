@@ -96,9 +96,6 @@ def test_compare_success(tmp_path):
 
     result = runner.invoke(app, [str(csv1), str(csv2), "-o", str(tmp_path / "output")])
 
-    print("OUTPUT:\n", result.output)
-    print("EXCEPTION:\n", result.exception)
-
     assert result.exit_code == 0
     output_file = tmp_path / "output.diff"
     assert output_file.exists()
