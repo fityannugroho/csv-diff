@@ -34,3 +34,8 @@
 ```bash
 csvdiff path/to/file1.csv path/to/file2.csv
 ```
+
+## Limitations
+
+- Only supports CSV files with a header row.
+- Not suitable for huge CSV files with hundreds of thousands of rows (for 1 million rows, it takes around 50 seconds).
