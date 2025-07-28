@@ -2,14 +2,22 @@
 name = "csv-diff-py"
 version = "0.1.0"
 description = "CLI tool for comparing CSV files in git diff format"
-authors = [{ name = "fityannugroho", email = "fityannugroho@gmail.com" }]
+authors = [
+    { name = "fityannugroho", email = "fityannugroho@gmail.com" }
+]
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-  "pandas",
-  "typer",
-  "pytest",
+    "pandas",
+    "typer",
+    "pytest",
 ]
+
+[project.urls]
+Homepage = "https://github.com/fityannugroho/csv-diff"
+Repository = "https://github.com/fityannugroho/csv-diff"
+Changelog = "https://github.com/fityannugroho/csv-diff/releases"
+Issues = "https://github.com/fityannugroho/csv-diff/issues"
 
 [project.scripts]
 csvdiff = "csvdiff.cli:app"
