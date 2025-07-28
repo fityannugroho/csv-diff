@@ -1,5 +1,5 @@
 [project]
-name = "csvdiff"
+name = "csv-diff-py"
 version = "0.1.0"
 description = "CLI tool for comparing CSV files in git diff format"
 authors = [{ name = "fityannugroho", email = "fityannugroho@gmail.com" }]
@@ -16,3 +16,7 @@ csvdiff = "csvdiff.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

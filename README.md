@@ -1,8 +1,18 @@
 # CSV Diff
 
-**csv-diff** is a CLI tool for comparing two CSV files and displaying the results in `git diff` style.
+CSV Diff is a CLI tool for comparing two CSV files and displaying the results in `git diff` style.
 
 ## 📦 Installation
+
+### Using pip
+
+You can install CSV Diff using pip with the following command:
+
+```bash
+pip install csv-diff-py
+```
+
+### From Source
 
 1. Clone this repository:
     ```bash
@@ -10,8 +20,9 @@
     cd csv-diff
     ```
 
-1. Create a virtual environment (optional but recommended):
+2. Use virtual environment (optional but recommended):
     ```bash
+    # Create a virtual environment named .venv
     python -m venv .venv
     ```
 
@@ -24,7 +35,7 @@
 
     > To disabled the virtual environment, use `deactivate`
 
-1. Install dependencies:
+3. Install dependencies:
     ```bash
     pip install -e .
     ```
