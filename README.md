@@ -34,44 +34,6 @@ For example, there are two CSV files, [`districts-2022.csv`](./docs/examples/dis
 
 > To see the full differences, please check the [`result.diff`](./docs/examples/result.diff) file.
 
-## 📦 Installation
-
-### Using pip
-
-This package is available on [PyPI](https://pypi.org/project/csv-diff-py). You can install it easily using the following command:
-
-```bash
-pip install csv-diff-py
-```
-
-### From source code
-
-1. Clone this repository:
-    ```bash
-    git clone https://github.com/fityannugroho/csv-diff.git
-    cd csv-diff
-    ```
-
-2. Use virtual environment (optional but recommended):
-    ```bash
-    # Create a virtual environment named .venv
-    python -m venv .venv
-    ```
-
-    Then, activate it:
-
-    ```bash
-    source .venv/bin/activate  # For Linux/Mac
-    .venv\Scripts\activate  # For Windows
-    ```
-
-    > To disabled the virtual environment, use `deactivate`
-
-3. Install dependencies:
-    ```bash
-    pip install -e .
-    ```
-
 ## 🚀 Usage
 
 ```bash
@@ -79,6 +41,70 @@ csvdiff path/to/file1.csv path/to/file2.csv
 ```
 
 > Use `--help` to see the available options.
+
+## 📦 Installation
+
+This package is available on [PyPI](https://pypi.org/project/csv-diff-py).
+You can install it as a standalone CLI application using [`pipx`](https://pypa.github.io/pipx/) or [`uv`](https://docs.astral.sh/uv/guides/tools).
+
+### Using `pipx`
+
+```bash
+pipx install csv-diff-py
+csvdiff --help
+```
+
+### Using `uv`
+
+```bash
+uv tool install csv-diff-py
+csvdiff --help
+```
+
+or without installing globally, you can use `uvx` to run it directly:
+```bash
+uvx --from csv-diff-py csvdiff --help
+```
+
+## 🛠️ Development Setup
+
+### Prerequisites
+
+- [`uv`](https://github.com/astral-sh/uv)
+- Python 3.8 or higher
+
+> Tip: You can use `uv` to install Python. See the [Python installation guide](https://docs.astral.sh/uv/guides/install-python) for more details.
+
+### Steps
+
+1. Clone this repository
+    ```bash
+    git clone https://github.com/fityannugroho/csv-diff.git
+    cd csv-diff
+    ```
+
+1. Install dependencies
+    ```bash
+    uv sync --all-extras
+    ```
+
+1. Run the tool locally
+
+    Via `uv`:
+    ```bash
+    uv run csvdiff --help
+    ```
+
+    Via virtual environment:
+    ```bash
+    source .venv/bin/activate
+    csvdiff --help
+    ```
+
+1. Run tests
+    ```bash
+    uv pytest
+    ```
 
 ## Limitations
 
