@@ -2,19 +2,15 @@ import pandas as pd
 from difflib import unified_diff
 from pathlib import Path
 import typer
+from typing_extensions import Annotated
 
 app = typer.Typer()
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
     """Validate that the file exists, is a CSV, and is readable."""
     # Check if file exists
-    if not file_path.exists():
-        typer.echo(f"❌ {file_label} '{file_path}' does not exist.", err=True)
-        raise typer.Exit(1)
-
-    # Check if it's a file (not a directory)
     if not file_path.is_file():
-        typer.echo(f"❌ {file_label} '{file_path}' is not a file.", err=True)
+        typer.echo(f"❌ {file_label} '{file_path}' is not a file or does not exist.", err=True)
         raise typer.Exit(1)
 
     # Check file extension
@@ -59,11 +55,20 @@ def validate_output_path(output_path: Path) -> None:
         typer.echo(f"❌ Cannot write to directory '{output_dir}': {e}", err=True)
         raise typer.Exit(1)
 
+def get_unique_filename(base_name: str, extension: str = ".diff") -> Path:
+    """Generate a unique filename by appending a counter if necessary."""
+    output_path = Path(f"{base_name}{extension}")
+    counter = 1
+    while output_path.exists():
+        output_path = Path(f"{base_name} ({counter}){extension}")
+        counter += 1
+    return output_path
+
 @app.command(no_args_is_help=True)
 def compare(
-    file1: Path = typer.Argument(..., help="Path to the first CSV file."),
-    file2: Path = typer.Argument(..., help="Path to the second CSV file."),
-    output: str = typer.Option(None, "--output", "-o", help="Specify the output file name."),
+    file1: Annotated[Path, typer.Argument(help="Path to the first CSV file.")],
+    file2: Annotated[Path, typer.Argument(help="Path to the second CSV file.")],
+    output: Annotated[str, typer.Option("--output", "-o", help="Specify the output file name.")] = "result",
 ):
     """
     Compare two CSV files and save the result to a .diff file.
@@ -73,16 +78,7 @@ def compare(
     validate_csv_file(file2, "Second CSV file")
 
     # Determine output path and validate
-    if output is None:
-        output = "result"
-    output_path = Path(f"{output}.diff")
-
-    # Ensure no duplicate filenames
-    counter = 1
-    while output_path.exists():
-        output_path = Path(f"{output} ({counter}).diff")
-        counter += 1
-
+    output_path = get_unique_filename(output, ".diff")
     validate_output_path(output_path)
 
     try:
