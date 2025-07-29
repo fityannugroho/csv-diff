@@ -59,7 +59,7 @@ def validate_output_path(output_path: Path) -> None:
         typer.echo(f"❌ Cannot write to directory '{output_dir}': {e}", err=True)
         raise typer.Exit(1)
 
-@app.command()
+@app.command(no_args_is_help=True)
 def compare(
     file1: Path = typer.Argument(..., help="Path to the first CSV file."),
     file2: Path = typer.Argument(..., help="Path to the second CSV file."),

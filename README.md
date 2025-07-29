@@ -51,19 +51,19 @@ You can install it as a standalone CLI application using [`pipx`](https://pypa.g
 
 ```bash
 pipx install csv-diff-py
-csvdiff --help
+csvdiff
 ```
 
 ### Using `uv`
 
 ```bash
 uv tool install csv-diff-py
-csvdiff --help
+csvdiff
 ```
 
 or without installing globally, you can use `uvx` to run it directly:
 ```bash
-uvx --from csv-diff-py csvdiff --help
+uvx --from csv-diff-py csvdiff
 ```
 
 ## 🛠️ Development Setup
@@ -92,18 +92,18 @@ uvx --from csv-diff-py csvdiff --help
 
     Via `uv`:
     ```bash
-    uv run csvdiff --help
+    uv run csvdiff
     ```
 
     Via virtual environment:
     ```bash
     source .venv/bin/activate
-    csvdiff --help
+    csvdiff
     ```
 
 1. Run tests
     ```bash
-    uv pytest
+    uv run pytest
     ```
 
 ## Limitations
