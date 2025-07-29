@@ -2,7 +2,8 @@ import pandas as pd
 from difflib import unified_diff
 from pathlib import Path
 import typer
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Optional
+from importlib.metadata import version, PackageNotFoundError
 
 app = typer.Typer()
 
@@ -64,11 +65,25 @@ def get_unique_filename(base_name: str, extension: str = ".diff") -> Path:
         counter += 1
     return output_path
 
+def version_option_callback(value: bool):
+    """
+    Callback function for the `--version` option.
+    """
+    if value:
+        package_name = "csv-diff-py"
+        try:
+            typer.echo(f"{package_name}: {version(package_name)}")
+            raise typer.Exit()
+        except PackageNotFoundError:
+            typer.echo(f"{package_name}: Version information not available. Make sure the package is installed.")
+            raise typer.Exit(1)
+
 @app.command(no_args_is_help=True)
 def compare(
     file1: Annotated[Path, typer.Argument(help="Path to the first CSV file.")],
     file2: Annotated[Path, typer.Argument(help="Path to the second CSV file.")],
     output: Annotated[str, typer.Option("--output", "-o", help="Specify the output file name.")] = "result",
+    version: Annotated[Optional[bool], typer.Option("--version", "-v", callback=version_option_callback, is_eager=True, help="Show the version of this package.")] = None
 ):
     """
     Compare two CSV files and save the result to a .diff file.
