@@ -1,8 +1,12 @@
 # CSV Diff
 
+[![PyPI](https://img.shields.io/pypi/v/csv-diff-py.svg)][pypi-package]
+[![License](https://img.shields.io/github/license/fityannugroho/csv-diff)](https://github.com/fityannugroho/csv-diff/blob/main/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/fityannugroho/csv-diff/test.yml?branch=main)](https://github.com/fityannugroho/csv-diff/actions/workflows/test.yml)
+
 CSV Diff is a CLI tool for comparing two CSV files and displaying the results in `git diff` style.
 
-For example, there are two CSV files, [`districts-2022.csv`](./docs/examples/districts-2022.csv) and [`districts-2025.csv`](./docs/examples/districts-2025.csv). With this tool, you can easily see the data differences between these two CSV files. The output will be saved as a `.diff` file, like this:
+For example, there are two CSV files, [`districts-2022.csv`](https://github.com/fityannugroho/csv-diff/blob/main/docs/examples/districts-2022.csv) and [`districts-2025.csv`](https://github.com/fityannugroho/csv-diff/blob/main/docs/examples/districts-2025.csv). With this tool, you can easily see the data differences between these two CSV files. The output will be saved as a `.diff` file, like this:
 
 ```diff
 --- districts-2022.csv
@@ -32,7 +36,7 @@ For example, there are two CSV files, [`districts-2022.csv`](./docs/examples/dis
 ... (truncated)
 ```
 
-> To see the full differences, please check the [`result.diff`](./docs/examples/result.diff) file.
+> To see the full differences, please check the [`result.diff`](https://github.com/fityannugroho/csv-diff/blob/main/docs/examples/result.diff) file.
 
 ## 🚀 Usage
 
@@ -44,7 +48,7 @@ csvdiff path/to/file1.csv path/to/file2.csv
 
 ## 📦 Installation
 
-This package is available on [PyPI](https://pypi.org/project/csv-diff-py).
+This package is available on [PyPI][pypi-package].
 You can install it as a standalone CLI application using [`pipx`](https://pypa.github.io/pipx/) or [`uv`](https://docs.astral.sh/uv/guides/tools).
 
 ### Using `pipx`
@@ -70,7 +74,7 @@ uvx --from csv-diff-py csvdiff
 
 ### Prerequisites
 
-- [`uv`](https://github.com/astral-sh/uv)
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation) package manager
 - Python 3.8 or higher
 
 > Tip: You can use `uv` to install Python. See the [Python installation guide](https://docs.astral.sh/uv/guides/install-python) for more details.
@@ -110,3 +114,6 @@ uvx --from csv-diff-py csvdiff
 
 - Only supports CSV files with a header row.
 - Not suitable for huge CSV files with hundreds of thousands of rows (for 1 million rows, it takes around 50 seconds).
+
+
+[pypi-package]: https://pypi.org/project/csv-diff-py
