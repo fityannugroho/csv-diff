@@ -4,7 +4,7 @@
 - Follow coding rules in [.agent/rules/coding.md](/.agent/rules/coding.md).
 - Prefer simple, obvious solutions over clever abstractions.
 - Always use `uv` as the package manager.
-- After completing changes: run `uv run pytest`.
-- If tests fail: stop, investigate, fix, and re-run tests.
+- After completing changes: run `uv run ruff check`, `uv run ruff format`, and `uv run pytest`.
+- If linter or tests fail: stop, investigate, fix, and re-run checks.
 - Do not proceed with further implementation until current implementation passes all checks.
 - Do not modify `uv.lock` manually; use `uv` commands.

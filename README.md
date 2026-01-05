@@ -110,6 +110,12 @@ uvx --from csv-diff-py csvdiff
     uv run pytest
     ```
 
+1. Run linter and formatter
+    ```bash
+    uv run ruff check
+    uv run ruff format
+    ```
+
 ## Limitations
 
 - Only supports CSV files with a header row.

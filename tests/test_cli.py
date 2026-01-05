@@ -1,17 +1,21 @@
+from pathlib import Path
+
+import pytest
 import typer
 from typer.testing import CliRunner
-import pytest
-from pathlib import Path
-from csvdiff.cli import validate_csv_file, validate_output_path, get_unique_filename, app
+
+from csvdiff.cli import app, get_unique_filename, validate_csv_file, validate_output_path
 
 runner = CliRunner()
 
 # --- Test cases for validate_csv_file ---
 
+
 def test_validate_csv_file_nonexistent_file(tmp_path):
     non_existent_file = tmp_path / "nonexistent.csv"
     with pytest.raises(typer.Exit):
         validate_csv_file(non_existent_file, "Test CSV file")
+
 
 def test_validate_csv_file_not_a_file(tmp_path):
     directory = tmp_path / "directory"
@@ -19,11 +23,13 @@ def test_validate_csv_file_not_a_file(tmp_path):
     with pytest.raises(typer.Exit):
         validate_csv_file(directory, "Test CSV file")
 
+
 def test_validate_csv_file_wrong_extension(tmp_path):
     non_csv_file = tmp_path / "file.txt"
     non_csv_file.touch()
     with pytest.raises(typer.Exit):
         validate_csv_file(non_csv_file, "Test CSV file")
+
 
 def test_validate_csv_file_no_permission(tmp_path):
     csv_file = tmp_path / "file.csv"
@@ -35,6 +41,7 @@ def test_validate_csv_file_no_permission(tmp_path):
     finally:
         csv_file.chmod(0o644)  # Restore permissions for cleanup
 
+
 def test_validate_csv_file_valid_file(tmp_path):
     valid_csv_file = tmp_path / "file.csv"
     valid_csv_file.write_text("header1,header2\nvalue1,value2\n", encoding="utf-8")
@@ -43,12 +50,15 @@ def test_validate_csv_file_valid_file(tmp_path):
     except typer.Exit:
         pytest.fail("validate_csv_file raised an exception for a valid file")
 
+
 # --- Test cases for validate_output_path ---
+
 
 def test_validate_output_path_nonexistent_directory(tmp_path):
     non_existent_dir = tmp_path / "nonexistent" / "output.diff"
     with pytest.raises(typer.Exit):
         validate_output_path(non_existent_dir)
+
 
 def test_validate_output_path_not_a_directory(tmp_path):
     not_a_directory = tmp_path / "file.txt"
@@ -56,6 +66,7 @@ def test_validate_output_path_not_a_directory(tmp_path):
     output_path = not_a_directory / "output.diff"
     with pytest.raises(typer.Exit):
         validate_output_path(output_path)
+
 
 def test_validate_output_path_no_permission(tmp_path, monkeypatch):
     restricted_dir = tmp_path / "restricted"
@@ -71,6 +82,7 @@ def test_validate_output_path_no_permission(tmp_path, monkeypatch):
     with pytest.raises(typer.Exit):
         validate_output_path(output_path)
 
+
 def test_validate_output_path_valid_directory(tmp_path):
     valid_dir = tmp_path / "valid"
     valid_dir.mkdir()
@@ -80,13 +92,16 @@ def test_validate_output_path_valid_directory(tmp_path):
     except typer.Exit:
         pytest.fail("validate_output_path raised an exception for a valid directory")
 
+
 # --- Test cases for get_unique_filename ---
+
 
 def test_get_unique_filename_no_conflict(tmp_path):
     base_name = tmp_path / "output"
     unique_filename = get_unique_filename(str(base_name))
     assert unique_filename == base_name.with_suffix(".diff")
     assert not unique_filename.exists()
+
 
 def test_get_unique_filename_with_conflict(tmp_path):
     base_name = tmp_path / "output"
@@ -95,13 +110,15 @@ def test_get_unique_filename_with_conflict(tmp_path):
     assert unique_filename == tmp_path / "output (1).diff"
     assert not unique_filename.exists()
 
+
 def test_get_unique_filename_multiple_conflicts(tmp_path):
     base_name = tmp_path / "output"
     (base_name.with_suffix(".diff")).touch()  # Create first conflicting file
-    (tmp_path / "output (1).diff").touch()   # Create second conflicting file
+    (tmp_path / "output (1).diff").touch()  # Create second conflicting file
     unique_filename = get_unique_filename(str(base_name))
     assert unique_filename == tmp_path / "output (2).diff"
     assert not unique_filename.exists()
+
 
 def test_get_unique_filename_custom_extension(tmp_path):
     base_name = tmp_path / "output"
@@ -110,12 +127,15 @@ def test_get_unique_filename_custom_extension(tmp_path):
     assert unique_filename == tmp_path / "output (1).log"
     assert not unique_filename.exists()
 
+
 # --- Test cases for CLI app ---
+
 
 def create_temp_csv(content: str, dir_path: Path, name: str) -> Path:
     path = dir_path / name
     path.write_text(content)
     return path
+
 
 def test_compare_success(tmp_path):
     # Create two temporary CSV files
@@ -131,6 +151,7 @@ def test_compare_success(tmp_path):
     assert "3,5" in output_file.read_text()
     assert "✅" in result.output
 
+
 def test_compare_non_csv_extension(tmp_path):
     not_csv = create_temp_csv("x,y\n1,2", tmp_path, "invalid.txt")
     csv = create_temp_csv("x,y\n1,2", tmp_path, "valid.csv")
@@ -140,6 +161,7 @@ def test_compare_non_csv_extension(tmp_path):
     assert result.exit_code != 0
     assert "not a CSV file" in result.output
 
+
 def test_file1_not_found(tmp_path):
     file1 = tmp_path / "missing.csv"  # not created
     file2 = create_temp_csv("a,b\n1,2", tmp_path, "file2.csv")
@@ -147,6 +169,7 @@ def test_file1_not_found(tmp_path):
     result = runner.invoke(app, [str(file1), str(file2)])
     assert result.exit_code != 0
     assert "does not exist" in result.output
+
 
 def test_file2_is_not_csv(tmp_path):
     file1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
@@ -156,6 +179,7 @@ def test_file2_is_not_csv(tmp_path):
     assert result.exit_code != 0
     assert "not a CSV file" in result.output
 
+
 def test_empty_csv_file(tmp_path):
     file1 = create_temp_csv("", tmp_path, "empty.csv")
     file2 = create_temp_csv("a,b\n1,2", tmp_path, "valid.csv")
@@ -163,6 +187,7 @@ def test_empty_csv_file(tmp_path):
     result = runner.invoke(app, [str(file1), str(file2)])
     assert result.exit_code != 0
     assert "empty" in result.output or "no data" in result.output
+
 
 def test_csv_with_different_columns(tmp_path):
     file1 = create_temp_csv("a,b\n1,2", tmp_path, "a.csv")

@@ -1,0 +1,38 @@
+# Maximum line length
+line-length = 120
+target-version = "py38"
+
+# Exclude common patterns
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+# Auto fix
+fix = true
+
+[lint]
+# Enable Pyflakes (F), pycodestyle errors (E), and isort (I) by default
+select = ["E", "F", "I", "N", "UP", "B"]
+ignore = ["B904"]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+# Like Black, respect magic trailing commas
+skip-magic-trailing-comma = false
+
+line-ending = "lf"
+
+[lint.isort]
+known-first-party = ["csvdiff"]

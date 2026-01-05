@@ -36,6 +36,9 @@ htmlcov/
 .tox/
 .pytest_cache/
 
+# Ruff cache
+.ruff_cache/
+
 # Logs
 *.log
 

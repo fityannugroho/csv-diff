@@ -9,12 +9,15 @@ A Python CLI tool for comparing two CSV files and displaying differences in `git
 - **CLI Framework:** `typer`
 - **Data Processing:** `pandas`
 - **Testing:** `pytest`
+- **Linting & Formatting:** `ruff`
 
 ## Commands
 - `uv sync --all-extras`: Install dependencies
 - `uv run pytest`: Run all tests
 - `uv run pytest --cov=csvdiff --cov-report=term-missing`: Run tests with coverage
 - `uv run pytest tests/test_cli.py::test_compare_success`: Run a specific test
+- `uv run ruff check`: Run linter
+- `uv run ruff format`: Format code
 - `uv build`: Build the package
 
 ## Rules and Workflows

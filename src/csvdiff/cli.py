@@ -1,11 +1,14 @@
-import pandas as pd
 from difflib import unified_diff
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from typing import Optional
+
+import pandas as pd
 import typer
-from typing_extensions import Annotated, Optional
-from importlib.metadata import version, PackageNotFoundError
+from typing_extensions import Annotated
 
 app = typer.Typer()
+
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
     """Validate that the file exists, is a CSV, and is readable."""
@@ -15,13 +18,13 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
         raise typer.Exit(1)
 
     # Check file extension
-    if file_path.suffix.lower() != '.csv':
+    if file_path.suffix.lower() != ".csv":
         typer.echo(f"❌ {file_label} '{file_path}' is not a CSV file.", err=True)
         raise typer.Exit(1)
 
     # Check if file is readable
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             f.read(1)  # Try to read first character
     except PermissionError:
         typer.echo(f"🔒 No permission to read {file_label} '{file_path}'.", err=True)
@@ -29,6 +32,7 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
     except Exception as e:
         typer.echo(f"❌ Cannot read {file_label} '{file_path}': {e}", err=True)
         raise typer.Exit(1)
+
 
 def validate_output_path(output_path: Path) -> None:
     """Validate that the output directory is writable."""
@@ -56,6 +60,7 @@ def validate_output_path(output_path: Path) -> None:
         typer.echo(f"❌ Cannot write to directory '{output_dir}': {e}", err=True)
         raise typer.Exit(1)
 
+
 def get_unique_filename(base_name: str, extension: str = ".diff") -> Path:
     """Generate a unique filename by appending a counter if necessary."""
     output_path = Path(f"{base_name}{extension}")
@@ -64,6 +69,7 @@ def get_unique_filename(base_name: str, extension: str = ".diff") -> Path:
         output_path = Path(f"{base_name} ({counter}){extension}")
         counter += 1
     return output_path
+
 
 def version_option_callback(value: bool):
     """
@@ -78,12 +84,18 @@ def version_option_callback(value: bool):
             typer.echo(f"{package_name}: Version information not available. Make sure the package is installed.")
             raise typer.Exit(1)
 
+
 @app.command(no_args_is_help=True)
 def compare(
     file1: Annotated[Path, typer.Argument(help="Path to the first CSV file.")],
     file2: Annotated[Path, typer.Argument(help="Path to the second CSV file.")],
     output: Annotated[str, typer.Option("--output", "-o", help="Specify the output file name.")] = "result",
-    version: Annotated[Optional[bool], typer.Option("--version", "-v", callback=version_option_callback, is_eager=True, help="Show the version of this package.")] = None
+    version: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--version", "-v", callback=version_option_callback, is_eager=True, help="Show the version of this package."
+        ),
+    ] = None,
 ):
     """
     Compare two CSV files and save the result to a .diff file.
@@ -132,19 +144,14 @@ def compare(
         lines1 = df1_sorted.to_csv(index=False, header=False).splitlines()
         lines2 = df2_sorted.to_csv(index=False, header=False).splitlines()
 
-        diff = list(unified_diff(
-            lines1, lines2,
-            fromfile=file1.name,
-            tofile=file2.name,
-            lineterm=''
-        ))
+        diff = list(unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm=""))
     except Exception as e:
         typer.echo(f"❌ Error: Failed to compute diff: {e}", err=True)
         raise typer.Exit(1)
 
     # Write output with error handling
     try:
-        output_path.write_text('\n'.join(diff), encoding='utf-8')
+        output_path.write_text("\n".join(diff), encoding="utf-8")
         typer.echo(f"✅ Diff result saved to: {output_path}")
     except PermissionError:
         typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)
@@ -152,6 +159,7 @@ def compare(
     except Exception as e:
         typer.echo(f"❌ Error: Failed to write output file: {e}", err=True)
         raise typer.Exit(1)
+
 
 if __name__ == "__main__":
     app()
