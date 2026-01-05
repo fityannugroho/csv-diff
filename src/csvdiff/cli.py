@@ -1,3 +1,4 @@
+import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -110,6 +111,7 @@ def compare(
     output_path = get_unique_filename(output, ".diff")
     validate_output_path(output_path)
 
+    start_time = time.time()
     try:
         with console.status("⏳ Comparing CSV files..."):
             try:
@@ -159,10 +161,13 @@ def compare(
         typer.echo(f"✅ Diff result saved to: {output_path}")
     except PermissionError:
         typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)
-        raise typer.Exit(1)
     except Exception as e:
         typer.echo(f"❌ Error: Failed to write output file: {e}", err=True)
-        raise typer.Exit(1)
+
+    # Display execution time
+    end_time = time.time()
+    duration = end_time - start_time
+    typer.echo(f"⏱️  Execution time: {duration:.3f}s")
 
 
 if __name__ == "__main__":
