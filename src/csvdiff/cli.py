@@ -1,16 +1,51 @@
+import csv
+import io
 import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Optional
 
-import pandas as pd
+import duckdb
 import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
 app = typer.Typer()
 console = Console()
+
+
+def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
+    """Convert list of row tuples to CSV string lines."""
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="")
+    lines = []
+    for row in rows:
+        # Clear buffer
+        output.seek(0)
+        output.truncate(0)
+        writer.writerow(row)
+        lines.append(output.getvalue())
+    return lines
+
+
+def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
+    """Read and sort a single CSV file using DuckDB for memory-efficient processing."""
+    conn = duckdb.connect()
+
+    try:
+        # Use DuckDB to read CSV
+        # We assume headers exist as per limitations
+        # all_varchar=True ensures all data is treated as strings to match original behavior
+
+        # Read and sort file
+        rel = conn.from_query(f"SELECT * FROM read_csv_auto('{file_path}', all_varchar=True) ORDER BY ALL")
+        rows = rel.fetchall()
+        cols = rel.columns
+
+        return rows, cols
+    finally:
+        conn.close()
 
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
@@ -115,49 +150,47 @@ def compare(
     try:
         with console.status("⏳ Comparing CSV files..."):
             try:
-                df1 = pd.read_csv(file1, dtype=str)
-                df2 = pd.read_csv(file2, dtype=str)
-            except pd.errors.EmptyDataError:
-                typer.echo("📄 Error: One of the CSV files is empty.", err=True)
-                raise typer.Exit(1)
-            except pd.errors.ParserError as e:
-                typer.echo(f"📊 Error: Failed to parse CSV files: {e}", err=True)
-                raise typer.Exit(1)
+                rows1, cols1 = read_csv_with_duckdb(file1)
+                rows2, cols2 = read_csv_with_duckdb(file2)
             except Exception as e:
                 typer.echo(f"❌ Error: Failed to read CSV files: {e}", err=True)
                 raise typer.Exit(1)
 
-            # Validate that DataFrames are not empty
-            if df1.empty:
-                typer.echo(f"📄 Error: First CSV file '{file1}' contains no data.", err=True)
-                raise typer.Exit(1)
+        # Validate that data is not empty
+        if not rows1:
+            typer.echo(f"📄 Error: First CSV file '{file1}' contains no data.", err=True)
+            raise typer.Exit(1)
 
-            if df2.empty:
-                typer.echo(f"📄 Error: Second CSV file '{file2}' contains no data.", err=True)
-                raise typer.Exit(1)
+        if not rows2:
+            typer.echo(f"📄 Error: Second CSV file '{file2}' contains no data.", err=True)
+            raise typer.Exit(1)
 
-            # Check if both files have the same columns
-            if not df1.columns.equals(df2.columns):
-                typer.echo("⚠️  Warning: CSV files have different column structures.", err=True)
-                typer.echo(f"📋 File1 columns: {list(df1.columns)}", err=True)
-                typer.echo(f"📋 File2 columns: {list(df2.columns)}", err=True)
+        # Check if both files have the same columns
+        if cols1 != cols2:
+            typer.echo("⚠️  Warning: CSV files have different column structures.", err=True)
+            typer.echo(f"📋 File1 columns: {cols1}", err=True)
+            typer.echo(f"📋 File2 columns: {cols2}", err=True)
 
-            df1_sorted = df1.sort_values(by=df1.columns.tolist()).reset_index(drop=True)
-            df2_sorted = df2.sort_values(by=df2.columns.tolist()).reset_index(drop=True)
+        lines1 = rows_to_csv_lines(rows1)
+        lines2 = rows_to_csv_lines(rows2)
 
-            lines1 = df1_sorted.to_csv(index=False, header=False).splitlines()
-            lines2 = df2_sorted.to_csv(index=False, header=False).splitlines()
+        # Free memory from rows immediately
+        del rows1, rows2
 
-            diff = list(unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm=""))
+        # Generate diff as an iterator (not a list) to save memory
+        diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
     except typer.Exit:
         raise
     except Exception as e:
         typer.echo(f"❌ Error: Failed to compute diff: {e}", err=True)
         raise typer.Exit(1)
 
-    # Write output with error handling
+    # Write output with error handling - stream line-by-line to save memory
     try:
-        output_path.write_text("\n".join(diff), encoding="utf-8")
+        with open(output_path, "w", encoding="utf-8") as f:
+            for line in diff:
+                f.write(line + "\n")
+
         typer.echo(f"✅ Diff result saved to: {output_path}")
     except PermissionError:
         typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)

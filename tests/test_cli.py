@@ -4,7 +4,13 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from csvdiff.cli import app, get_unique_filename, validate_csv_file, validate_output_path
+from csvdiff.cli import (
+    app,
+    get_unique_filename,
+    read_csv_with_duckdb,
+    validate_csv_file,
+    validate_output_path,
+)
 
 runner = CliRunner()
 
@@ -126,6 +132,33 @@ def test_get_unique_filename_custom_extension(tmp_path):
     unique_filename = get_unique_filename(str(base_name), ".log")
     assert unique_filename == tmp_path / "output (1).log"
     assert not unique_filename.exists()
+
+
+# --- Test cases for read_csv_with_duckdb ---
+
+
+def test_read_csv_with_duckdb_basic(tmp_path):
+    file1 = tmp_path / "file1.csv"
+    file1.write_text("a,b\n1,2\n3,4\n")
+
+    rows1, cols1 = read_csv_with_duckdb(file1)
+
+    assert len(rows1) == 2
+    assert cols1 == ["a", "b"]
+
+
+def test_read_csv_with_duckdb_sorted(tmp_path):
+    file1 = tmp_path / "unsorted.csv"
+    file1.write_text("a,b\n3,4\n1,2\n")
+
+    rows1, _ = read_csv_with_duckdb(file1)
+
+    # rows1 should be sorted by all columns: ('1', '2') then ('3', '4')
+    # Note: DuckDB returns tuples of values
+    assert rows1[0][0] == "1"
+    assert rows1[0][1] == "2"
+    assert rows1[1][0] == "3"
+    assert rows1[1][1] == "4"
 
 
 # --- Test cases for CLI app ---

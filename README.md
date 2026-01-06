@@ -119,7 +119,5 @@ uvx --from csv-diff-py csvdiff
 ## Limitations
 
 - Only supports CSV files with a header row.
-- Not suitable for huge CSV files with hundreds of thousands of rows (for 1 million rows, it takes around 50 seconds).
-
 
 [pypi-package]: https://pypi.org/project/csv-diff-py
