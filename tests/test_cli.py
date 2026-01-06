@@ -182,7 +182,7 @@ def test_compare_success(tmp_path):
     assert output_file.exists()
     assert "3,4" in output_file.read_text()
     assert "3,5" in output_file.read_text()
-    assert "Diff result saved to" in result.output
+    assert "Success" in result.output
 
 
 def test_compare_non_csv_extension(tmp_path):
