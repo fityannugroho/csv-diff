@@ -154,28 +154,25 @@ def compare(
 
     start_time = time.time()
     try:
-        with console.status("Processing...") as status:
+        with console.status("Reading and sorting CSV files...") as status:
             # 1. Read and sort CSVs
-            status.update("Reading and sorting CSV files...")
             rows1, cols1 = read_csv_with_duckdb(file1)
             rows2, cols2 = read_csv_with_duckdb(file2)
 
-            # 2. Validate data
-            if not rows1:
-                typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
-                raise typer.Exit(1)
-            if not rows2:
-                typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
-                raise typer.Exit(1)
+        # 2. Validate data (outside spinner to ensure clean error messages)
+        if not rows1:
+            typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1)
+        if not rows2:
+            typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1)
 
-            # Check column structures
-            if cols1 != cols2:
-                typer.secho("Warning: CSV files have different column structures.", fg=typer.colors.YELLOW, err=True)
-                typer.echo(f"File1 columns: {cols1}", err=True)
-                typer.echo(f"File2 columns: {cols2}", err=True)
+        # Check column structures
+        if cols1 != cols2:
+            typer.secho("Warning: CSV files have different column structures.", fg=typer.colors.YELLOW, err=True)
 
+        with console.status("Computing differences...") as status:
             # 3. Compute diff
-            status.update("Computing differences...")
             lines1 = rows_to_csv_lines(rows1)
             lines2 = rows_to_csv_lines(rows2)
             del rows1, rows2  # Free memory
@@ -198,11 +195,11 @@ def compare(
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
-
-    # Display execution time
-    end_time = time.time()
-    duration = end_time - start_time
-    typer.secho(f"({duration:.3f}s)", fg=typer.colors.CYAN)
+    finally:
+        # Display execution time
+        end_time = time.time()
+        duration = end_time - start_time
+        typer.secho(f"({duration:.3f}s)", fg=typer.colors.CYAN)
 
 
 if __name__ == "__main__":
