@@ -38,9 +38,9 @@ def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
         # We assume headers exist as per limitations
         # all_varchar=True ensures all data is treated as strings to match original behavior
 
-        # Read and sort file
-        # Use parameterized query to prevent SQL injection and handle filenames with special characters
-        rel = conn.sql("SELECT * FROM read_csv_auto(?, all_varchar=True) ORDER BY ALL", params=[str(file_path)])
+        # Read and sort file using Relational API
+        # This approach is safe from SQL injection and faster than parameterized SQL queries
+        rel = conn.read_csv(str(file_path), all_varchar=True).order("ALL")
         rows = rel.fetchall()
         cols = rel.columns
 
