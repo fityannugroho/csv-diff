@@ -38,7 +38,7 @@ For example, there are two CSV files, [`districts-2022.csv`](https://github.com/
 
 > To see the full differences, please check the [`result.diff`](https://github.com/fityannugroho/csv-diff/blob/main/docs/examples/result.diff) file.
 
-## 🚀 Usage
+## Usage
 
 ```bash
 csvdiff path/to/file1.csv path/to/file2.csv
@@ -46,7 +46,7 @@ csvdiff path/to/file1.csv path/to/file2.csv
 
 > Use `--help` to see the available options.
 
-## 📦 Installation
+## Installation
 
 This package is available on [PyPI][pypi-package].
 You can install it as a standalone CLI application using [`pipx`](https://pypa.github.io/pipx/) or [`uv`](https://docs.astral.sh/uv/guides/tools).
@@ -70,7 +70,7 @@ or without installing globally, you can use `uvx` to run it directly:
 uvx --from csv-diff-py csvdiff
 ```
 
-## 🛠️ Development Setup
+## Development Setup
 
 ### Prerequisites
 
