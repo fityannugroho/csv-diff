@@ -7,7 +7,7 @@ A Python CLI tool for comparing two CSV files and displaying differences in `git
 - **Language:** Python 3.8+
 - **Package Manager:** `uv`
 - **CLI Framework:** `typer`
-- **Data Processing:** `pandas`
+- **Data Processing:** `duckdb`
 - **Testing:** `pytest`
 - **Linting & Formatting:** `ruff`
 
@@ -36,7 +36,7 @@ A Python CLI tool for comparing two CSV files and displaying differences in `git
 ## Key Components
 
 ### CLI Entry Point (`cli.py`)
-The `compare()` function validates input CSV files, sorts DataFrames, computes unified diff using `difflib.unified_diff`, and writes output to a `.diff` file.
+The `compare()` function validates input CSV files, reads and sorts CSVs using DuckDB, computes unified diff using `difflib.unified_diff`, and writes output to a `.diff` file.
 
 ### Validation Functions
 - `validate_csv_file()`: Checks file existence, extension (.csv), and read permissions

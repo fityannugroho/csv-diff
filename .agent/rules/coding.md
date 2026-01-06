@@ -39,9 +39,9 @@ from importlib.metadata import version, PackageNotFoundError
 - All error messages should use appropriate output to stderr via `typer.echo(..., err=True)`.
 
 ## Data Processing Patterns
-- Use `pandas.DataFrame` for CSV operations.
-- Read CSVs with `dtype=str` to preserve all data as strings.
-- Sort DataFrames before comparison: `df.sort_values(by=df.columns.tolist()).reset_index(drop=True)`
+- Use `duckdb` for CSV operations to handle larger files efficiently.
+- Read CSVs with `all_varchar=True` to preserve all data as strings.
+- Sort data using SQL: `SELECT * FROM read_csv_auto(...) ORDER BY ALL`.
 - Use `pathlib.Path` for all file path operations.
 - Validation functions should raise `typer.Exit(1)` on failure, return `None` on success.
 
