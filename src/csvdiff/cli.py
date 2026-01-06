@@ -52,12 +52,12 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
     """Validate that the file exists, is a CSV, and is readable."""
     # Check if file exists
     if not file_path.is_file():
-        typer.echo(f"❌ {file_label} '{file_path}' is not a file or does not exist.", err=True)
+        typer.echo(f"Error: {file_label} '{file_path}' is not a file or does not exist.", err=True)
         raise typer.Exit(1)
 
     # Check file extension
     if file_path.suffix.lower() != ".csv":
-        typer.echo(f"❌ {file_label} '{file_path}' is not a CSV file.", err=True)
+        typer.echo(f"Error: {file_label} '{file_path}' is not a CSV file.", err=True)
         raise typer.Exit(1)
 
     # Check if file is readable
@@ -65,10 +65,10 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
         with open(file_path, encoding="utf-8") as f:
             f.read(1)  # Try to read first character
     except PermissionError:
-        typer.echo(f"🔒 No permission to read {file_label} '{file_path}'.", err=True)
+        typer.echo(f"Error: No permission to read {file_label} '{file_path}'.", err=True)
         raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"❌ Cannot read {file_label} '{file_path}': {e}", err=True)
+        typer.echo(f"Error: Cannot read {file_label} '{file_path}': {e}", err=True)
         raise typer.Exit(1)
 
 
@@ -78,12 +78,12 @@ def validate_output_path(output_path: Path) -> None:
 
     # Check if parent directory exists
     if not output_dir.exists():
-        typer.echo(f"📁 Output directory '{output_dir}' does not exist.", err=True)
+        typer.echo(f"Error: Output directory '{output_dir}' does not exist.", err=True)
         raise typer.Exit(1)
 
     # Check if we can write to the directory
     if not output_dir.is_dir():
-        typer.echo(f"📁 Output path parent '{output_dir}' is not a directory.", err=True)
+        typer.echo(f"Error: Output path parent '{output_dir}' is not a directory.", err=True)
         raise typer.Exit(1)
 
     # Check writability with a temporary file
@@ -92,10 +92,10 @@ def validate_output_path(output_path: Path) -> None:
         test_file.write_text("test", encoding="utf-8")
         test_file.unlink()
     except PermissionError:
-        typer.echo(f"🔒 No permission to write to directory '{output_dir}'.", err=True)
+        typer.echo(f"Error: No permission to write to directory '{output_dir}'.", err=True)
         raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"❌ Cannot write to directory '{output_dir}': {e}", err=True)
+        typer.echo(f"Error: Cannot write to directory '{output_dir}': {e}", err=True)
         raise typer.Exit(1)
 
 
@@ -148,28 +148,28 @@ def compare(
 
     start_time = time.time()
     try:
-        with console.status("⏳ Comparing CSV files..."):
+        with console.status("Comparing CSV files..."):
             try:
                 rows1, cols1 = read_csv_with_duckdb(file1)
                 rows2, cols2 = read_csv_with_duckdb(file2)
             except Exception as e:
-                typer.echo(f"❌ Error: Failed to read CSV files: {e}", err=True)
+                typer.echo(f"Error: Failed to read CSV files: {e}", err=True)
                 raise typer.Exit(1)
 
         # Validate that data is not empty
         if not rows1:
-            typer.echo(f"📄 Error: First CSV file '{file1}' contains no data.", err=True)
+            typer.echo(f"Error: First CSV file '{file1}' contains no data.", err=True)
             raise typer.Exit(1)
 
         if not rows2:
-            typer.echo(f"📄 Error: Second CSV file '{file2}' contains no data.", err=True)
+            typer.echo(f"Error: Second CSV file '{file2}' contains no data.", err=True)
             raise typer.Exit(1)
 
         # Check if both files have the same columns
         if cols1 != cols2:
-            typer.echo("⚠️  Warning: CSV files have different column structures.", err=True)
-            typer.echo(f"📋 File1 columns: {cols1}", err=True)
-            typer.echo(f"📋 File2 columns: {cols2}", err=True)
+            typer.echo("Warning: CSV files have different column structures.", err=True)
+            typer.echo(f"File1 columns: {cols1}", err=True)
+            typer.echo(f"File2 columns: {cols2}", err=True)
 
         lines1 = rows_to_csv_lines(rows1)
         lines2 = rows_to_csv_lines(rows2)
@@ -182,7 +182,7 @@ def compare(
     except typer.Exit:
         raise
     except Exception as e:
-        typer.echo(f"❌ Error: Failed to compute diff: {e}", err=True)
+        typer.echo(f"Error: Failed to compute diff: {e}", err=True)
         raise typer.Exit(1)
 
     # Write output with error handling - stream line-by-line to save memory
@@ -191,16 +191,16 @@ def compare(
             for line in diff:
                 f.write(line + "\n")
 
-        typer.echo(f"✅ Diff result saved to: {output_path}")
+        typer.echo(f"Diff result saved to: {output_path}")
     except PermissionError:
-        typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)
+        typer.echo(f"Error: No permission to write to file '{output_path}'.", err=True)
     except Exception as e:
-        typer.echo(f"❌ Error: Failed to write output file: {e}", err=True)
+        typer.echo(f"Error: Failed to write output file: {e}", err=True)
 
     # Display execution time
     end_time = time.time()
     duration = end_time - start_time
-    typer.echo(f"⏱️  Execution time: {duration:.3f}s")
+    typer.echo(f"Execution time: {duration:.3f}s")
 
 
 if __name__ == "__main__":
