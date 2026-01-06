@@ -17,13 +17,10 @@ console = Console()
 
 def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
     """Convert list of row tuples to CSV string lines."""
-    output = io.StringIO()
-    writer = csv.writer(output, lineterminator="")
     lines = []
     for row in rows:
-        # Clear buffer
-        output.seek(0)
-        output.truncate(0)
+        output = io.StringIO()
+        writer = csv.writer(output, lineterminator="")
         writer.writerow(row)
         lines.append(output.getvalue())
     return lines
