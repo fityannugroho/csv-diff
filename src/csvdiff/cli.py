@@ -1,3 +1,4 @@
+import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -5,9 +6,11 @@ from typing import Optional
 
 import pandas as pd
 import typer
+from rich.console import Console
 from typing_extensions import Annotated
 
 app = typer.Typer()
+console = Console()
 
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
@@ -108,43 +111,46 @@ def compare(
     output_path = get_unique_filename(output, ".diff")
     validate_output_path(output_path)
 
+    start_time = time.time()
     try:
-        # Read CSV files with error handling
-        df1 = pd.read_csv(file1, dtype=str)
-        df2 = pd.read_csv(file2, dtype=str)
-    except pd.errors.EmptyDataError:
-        typer.echo("📄 Error: One of the CSV files is empty.", err=True)
-        raise typer.Exit(1)
-    except pd.errors.ParserError as e:
-        typer.echo(f"📊 Error: Failed to parse CSV files: {e}", err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.echo(f"❌ Error: Failed to read CSV files: {e}", err=True)
-        raise typer.Exit(1)
+        with console.status("⏳ Comparing CSV files..."):
+            try:
+                df1 = pd.read_csv(file1, dtype=str)
+                df2 = pd.read_csv(file2, dtype=str)
+            except pd.errors.EmptyDataError:
+                typer.echo("📄 Error: One of the CSV files is empty.", err=True)
+                raise typer.Exit(1)
+            except pd.errors.ParserError as e:
+                typer.echo(f"📊 Error: Failed to parse CSV files: {e}", err=True)
+                raise typer.Exit(1)
+            except Exception as e:
+                typer.echo(f"❌ Error: Failed to read CSV files: {e}", err=True)
+                raise typer.Exit(1)
 
-    # Validate that DataFrames are not empty
-    if df1.empty:
-        typer.echo(f"📄 Error: First CSV file '{file1}' contains no data.", err=True)
-        raise typer.Exit(1)
+            # Validate that DataFrames are not empty
+            if df1.empty:
+                typer.echo(f"📄 Error: First CSV file '{file1}' contains no data.", err=True)
+                raise typer.Exit(1)
 
-    if df2.empty:
-        typer.echo(f"📄 Error: Second CSV file '{file2}' contains no data.", err=True)
-        raise typer.Exit(1)
+            if df2.empty:
+                typer.echo(f"📄 Error: Second CSV file '{file2}' contains no data.", err=True)
+                raise typer.Exit(1)
 
-    # Check if both files have the same columns
-    if not df1.columns.equals(df2.columns):
-        typer.echo("⚠️  Warning: CSV files have different column structures.", err=True)
-        typer.echo(f"📋 File1 columns: {list(df1.columns)}", err=True)
-        typer.echo(f"📋 File2 columns: {list(df2.columns)}", err=True)
+            # Check if both files have the same columns
+            if not df1.columns.equals(df2.columns):
+                typer.echo("⚠️  Warning: CSV files have different column structures.", err=True)
+                typer.echo(f"📋 File1 columns: {list(df1.columns)}", err=True)
+                typer.echo(f"📋 File2 columns: {list(df2.columns)}", err=True)
 
-    try:
-        df1_sorted = df1.sort_values(by=df1.columns.tolist()).reset_index(drop=True)
-        df2_sorted = df2.sort_values(by=df2.columns.tolist()).reset_index(drop=True)
+            df1_sorted = df1.sort_values(by=df1.columns.tolist()).reset_index(drop=True)
+            df2_sorted = df2.sort_values(by=df2.columns.tolist()).reset_index(drop=True)
 
-        lines1 = df1_sorted.to_csv(index=False, header=False).splitlines()
-        lines2 = df2_sorted.to_csv(index=False, header=False).splitlines()
+            lines1 = df1_sorted.to_csv(index=False, header=False).splitlines()
+            lines2 = df2_sorted.to_csv(index=False, header=False).splitlines()
 
-        diff = list(unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm=""))
+            diff = list(unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm=""))
+    except typer.Exit:
+        raise
     except Exception as e:
         typer.echo(f"❌ Error: Failed to compute diff: {e}", err=True)
         raise typer.Exit(1)
@@ -155,10 +161,13 @@ def compare(
         typer.echo(f"✅ Diff result saved to: {output_path}")
     except PermissionError:
         typer.echo(f"🔒 No permission to write to file '{output_path}'.", err=True)
-        raise typer.Exit(1)
     except Exception as e:
         typer.echo(f"❌ Error: Failed to write output file: {e}", err=True)
-        raise typer.Exit(1)
+
+    # Display execution time
+    end_time = time.time()
+    duration = end_time - start_time
+    typer.echo(f"⏱️  Execution time: {duration:.3f}s")
 
 
 if __name__ == "__main__":
