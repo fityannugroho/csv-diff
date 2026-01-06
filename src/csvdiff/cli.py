@@ -154,59 +154,55 @@ def compare(
 
     start_time = time.time()
     try:
-        with console.status("Comparing CSV files..."):
-            try:
-                rows1, cols1 = read_csv_with_duckdb(file1)
-                rows2, cols2 = read_csv_with_duckdb(file2)
-            except Exception as e:
-                typer.secho(f"Error: Failed to read CSV files: {e}", fg=typer.colors.RED, err=True)
+        with console.status("Processing...") as status:
+            # 1. Read and sort CSVs
+            status.update("Reading and sorting CSV files...")
+            rows1, cols1 = read_csv_with_duckdb(file1)
+            rows2, cols2 = read_csv_with_duckdb(file2)
+
+            # 2. Validate data
+            if not rows1:
+                typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
+                raise typer.Exit(1)
+            if not rows2:
+                typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
                 raise typer.Exit(1)
 
-        # Validate that data is not empty
-        if not rows1:
-            typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
-            raise typer.Exit(1)
+            # Check column structures
+            if cols1 != cols2:
+                typer.secho("Warning: CSV files have different column structures.", fg=typer.colors.YELLOW, err=True)
+                typer.echo(f"File1 columns: {cols1}", err=True)
+                typer.echo(f"File2 columns: {cols2}", err=True)
 
-        if not rows2:
-            typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
-            raise typer.Exit(1)
+            # 3. Compute diff
+            status.update("Computing differences...")
+            lines1 = rows_to_csv_lines(rows1)
+            lines2 = rows_to_csv_lines(rows2)
+            del rows1, rows2  # Free memory
 
-        # Check if both files have the same columns
-        if cols1 != cols2:
-            typer.secho("Warning: CSV files have different column structures.", fg=typer.colors.YELLOW, err=True)
-            typer.echo(f"File1 columns: {cols1}", err=True)
-            typer.echo(f"File2 columns: {cols2}", err=True)
+            diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
 
-        lines1 = rows_to_csv_lines(rows1)
-        lines2 = rows_to_csv_lines(rows2)
+            # 4. Write output
+            status.update("Writing result...")
+            with open(output_path, "w", encoding="utf-8") as f:
+                for line in diff:
+                    f.write(line + "\n")
 
-        # Free memory from rows immediately
-        del rows1, rows2
+        typer.secho(f"Success. The result saved to `{output_path}`", fg=typer.colors.BRIGHT_GREEN)
 
-        # Generate diff as an iterator (not a list) to save memory
-        diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
     except typer.Exit:
         raise
-    except Exception as e:
-        typer.secho(f"Error: Failed to compute diff: {e}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    # Write output with error handling - stream line-by-line to save memory
-    try:
-        with open(output_path, "w", encoding="utf-8") as f:
-            for line in diff:
-                f.write(line + "\n")
-
-        typer.secho(f"Success. The result saved to: {output_path}", fg=typer.colors.BRIGHT_GREEN)
     except PermissionError:
         typer.secho(f"Error: No permission to write to file '{output_path}'.", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
     except Exception as e:
-        typer.secho(f"Error: Failed to write output file: {e}", fg=typer.colors.RED, err=True)
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1)
 
     # Display execution time
     end_time = time.time()
     duration = end_time - start_time
-    typer.secho(f"Execution time: {duration:.3f}s", fg=typer.colors.CYAN)
+    typer.secho(f"({duration:.3f}s)", fg=typer.colors.CYAN)
 
 
 if __name__ == "__main__":
