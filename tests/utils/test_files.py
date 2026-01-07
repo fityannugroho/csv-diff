@@ -19,10 +19,6 @@ def test_create_unique_output_file_no_conflict(tmp_path):
         assert handle.name == str(output_path)
     finally:
         handle.close()
-        # Clean up
-        output_path = Path(handle.name)
-        if output_path.exists():
-            output_path.unlink()
 
 
 def test_create_unique_output_file_with_conflict(tmp_path):
@@ -41,12 +37,6 @@ def test_create_unique_output_file_with_conflict(tmp_path):
         assert handle.writable()
     finally:
         handle.close()
-        # Clean up
-        output_path = Path(handle.name)
-        if output_path.exists():
-            output_path.unlink()
-        if conflict_file.exists():
-            conflict_file.unlink()
 
 
 def test_create_unique_output_file_multiple_conflicts(tmp_path):
@@ -65,9 +55,6 @@ def test_create_unique_output_file_multiple_conflicts(tmp_path):
         assert handle.writable()
     finally:
         handle.close()
-        # Clean up
-        for f in tmp_path.glob("output*.diff"):
-            f.unlink()
 
 
 def test_create_unique_output_file_custom_extension(tmp_path):
@@ -85,9 +72,6 @@ def test_create_unique_output_file_custom_extension(tmp_path):
         assert handle.writable()
     finally:
         handle.close()
-        # Clean up
-        for f in tmp_path.glob("output*.log"):
-            f.unlink()
 
 
 def test_create_unique_output_file_can_write(tmp_path):
@@ -140,26 +124,20 @@ def test_create_unique_output_file_concurrent_creation(tmp_path):
     for t in threads:
         t.join()
 
-    try:
-        # Verify no errors occurred
-        assert len(errors) == 0, f"Errors occurred: {errors}"
+    # Verify no errors occurred
+    assert len(errors) == 0, f"Errors occurred: {errors}"
 
-        # Verify all files were created
-        assert len(created_files) == 10
+    # Verify all files were created
+    assert len(created_files) == 10
 
-        # Verify all filenames are unique
-        assert len(set(created_files)) == 10
+    # Verify all filenames are unique
+    assert len(set(created_files)) == 10
 
-        # Verify all files exist and have content
-        for file_path in created_files:
-            assert file_path.exists()
-            content = file_path.read_text()
-            assert "Thread" in content
-    finally:
-        # Clean up
-        for f in created_files:
-            if f.exists():
-                f.unlink()
+    # Verify all files exist and have content
+    for file_path in created_files:
+        assert file_path.exists()
+        content = file_path.read_text()
+        assert "Thread" in content
 
 
 def test_create_unique_output_file_encoding(tmp_path):
