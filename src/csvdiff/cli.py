@@ -58,28 +58,36 @@ def compare(
     start_time = time.time()
     try:
         with console.status("Reading and sorting CSV files...") as status:
-            # 1. Read and sort CSVs
+            # 1. Process first CSV file
             rows1, cols1 = read_csv_with_duckdb(file1)
+
+            # Validate first file data
+            if not rows1:
+                typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
+                raise typer.Exit(1)
+
+            # Convert to lines and free memory immediately
+            lines1 = rows_to_csv_lines(rows1)
+            del rows1
+
+            # 2. Process second CSV file
             rows2, cols2 = read_csv_with_duckdb(file2)
 
-        # 2. Validate data (outside spinner to ensure clean error messages)
-        if not rows1:
-            typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
-            raise typer.Exit(1)
-        if not rows2:
-            typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
-            raise typer.Exit(1)
+            # Validate second file data
+            if not rows2:
+                typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
+                raise typer.Exit(1)
 
-        # Check column structures
+            # Convert to lines and free memory immediately
+            lines2 = rows_to_csv_lines(rows2)
+            del rows2
+
+        # Check column structures (outside spinner for clean messages)
         if cols1 != cols2:
             typer.secho("Warning: CSV files have different column structures.", fg=typer.colors.YELLOW, err=True)
 
         with console.status("Computing differences...") as status:
             # 3. Compute diff
-            lines1 = rows_to_csv_lines(rows1)
-            lines2 = rows_to_csv_lines(rows2)
-            del rows1, rows2  # Free memory
-
             diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
 
             # 4. Write output

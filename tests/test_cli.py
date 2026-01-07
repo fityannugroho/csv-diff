@@ -220,3 +220,41 @@ def test_utf8_sig_encoding(tmp_path):
     # Verify content
     diff_content = diff_file.read_text(encoding="utf-8")
     assert "café" in diff_content
+
+
+def test_large_csv_files(tmp_path):
+    """Test with large CSV files to validate memory efficiency."""
+    # Create large CSV files (10K rows each)
+    num_rows = 10000
+
+    # Generate file1 with sequential data
+    file1 = tmp_path / "large1.csv"
+    with open(file1, "w", encoding="utf-8") as f:
+        f.write("id,name,value,description\n")
+        for i in range(num_rows):
+            f.write(f"{i},name_{i},value_{i},description_{i}\n")
+
+    # Generate file2 with some modifications
+    file2 = tmp_path / "large2.csv"
+    with open(file2, "w", encoding="utf-8") as f:
+        f.write("id,name,value,description\n")
+        for i in range(num_rows):
+            # Modify every 100th row
+            if i % 100 == 0:
+                f.write(f"{i},name_{i}_modified,value_{i},description_{i}\n")
+            else:
+                f.write(f"{i},name_{i},value_{i},description_{i}\n")
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify diff contains modifications
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "name_0_modified" in diff_content
+    assert "name_100_modified" in diff_content
