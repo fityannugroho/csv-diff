@@ -20,18 +20,28 @@ console = Console()
 
 def detect_encoding(file_path: Path) -> str:
     """Detect encoding by trying a prioritized list of encodings."""
+    # Try to detect BOM first
+    try:
+        with open(file_path, "rb") as f:
+            raw = f.read(4)
+        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return "utf-16"
+        if raw.startswith(b"\xef\xbb\xbf"):
+            return "utf-8-sig"
+    except Exception:
+        pass
+
     encodings = [
         "utf-8",
-        "utf-8-sig",
         "cp1252",
         "iso-8859-1",
-        "utf-16",
     ]
 
     for encoding in encodings:
         try:
             with open(file_path, encoding=encoding) as f:
-                f.read(4096)  # Read a chunk to verify
+                # Read a larger chunk to be more certain
+                f.read(8192)
             return encoding
         except UnicodeError:
             continue
