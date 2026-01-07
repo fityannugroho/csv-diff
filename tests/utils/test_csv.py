@@ -1,4 +1,6 @@
-from csvdiff.cli import rows_to_csv_lines
+import pytest
+
+from csvdiff.utils.csv import read_csv_with_duckdb, rows_to_csv_lines
 
 
 def test_rows_to_csv_lines_basic():
@@ -63,3 +65,41 @@ def test_rows_to_csv_lines_single_column():
     assert len(result) == 2
     assert result[0] == "value1"
     assert result[1] == "value2"
+
+
+def test_read_csv_with_duckdb_basic(tmp_path):
+    file1 = tmp_path / "file1.csv"
+    file1.write_text("a,b\n1,2\n3,4\n")
+
+    rows1, cols1 = read_csv_with_duckdb(file1)
+
+    assert len(rows1) == 2
+    assert cols1 == ["a", "b"]
+
+
+def test_read_csv_with_duckdb_sorted(tmp_path):
+    file1 = tmp_path / "unsorted.csv"
+    file1.write_text("a,b\n3,4\n1,2\n")
+
+    rows1, _ = read_csv_with_duckdb(file1)
+
+    # rows1 should be sorted by all columns: ('1', '2') then ('3', '4')
+    # Note: DuckDB returns tuples of values
+    assert rows1[0][0] == "1"
+    assert rows1[0][1] == "2"
+    assert rows1[1][0] == "3"
+    assert rows1[1][1] == "4"
+
+
+def test_read_csv_with_single_quote_filename(tmp_path):
+    # Create a file with a single quote in the name
+    filename = tmp_path / "test'file.csv"
+    filename.write_text("col1,col2\n1,2", encoding="utf-8")
+
+    try:
+        rows, cols = read_csv_with_duckdb(filename)
+        assert len(rows) == 1
+        assert cols == ["col1", "col2"]
+        assert rows[0] == ("1", "2")
+    except Exception as e:
+        pytest.fail(f"Failed to read file with quote in name: {e}")

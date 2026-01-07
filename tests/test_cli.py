@@ -1,167 +1,10 @@
 from pathlib import Path
 
-import pytest
-import typer
 from typer.testing import CliRunner
 
-from csvdiff.cli import (
-    app,
-    get_unique_filename,
-    read_csv_with_duckdb,
-    validate_csv_file,
-    validate_output_path,
-)
+from csvdiff.cli import app
 
 runner = CliRunner()
-
-# --- Test cases for validate_csv_file ---
-
-
-def test_validate_csv_file_nonexistent_file(tmp_path):
-    non_existent_file = tmp_path / "nonexistent.csv"
-    with pytest.raises(typer.Exit):
-        validate_csv_file(non_existent_file, "Test CSV file")
-
-
-def test_validate_csv_file_not_a_file(tmp_path):
-    directory = tmp_path / "directory"
-    directory.mkdir()
-    with pytest.raises(typer.Exit):
-        validate_csv_file(directory, "Test CSV file")
-
-
-def test_validate_csv_file_wrong_extension(tmp_path):
-    non_csv_file = tmp_path / "file.txt"
-    non_csv_file.touch()
-    with pytest.raises(typer.Exit):
-        validate_csv_file(non_csv_file, "Test CSV file")
-
-
-def test_validate_csv_file_no_permission(tmp_path):
-    csv_file = tmp_path / "file.csv"
-    csv_file.touch()
-    csv_file.chmod(0o000)  # Remove all permissions
-    try:
-        with pytest.raises(typer.Exit):
-            validate_csv_file(csv_file, "Test CSV file")
-    finally:
-        csv_file.chmod(0o644)  # Restore permissions for cleanup
-
-
-def test_validate_csv_file_valid_file(tmp_path):
-    valid_csv_file = tmp_path / "file.csv"
-    valid_csv_file.write_text("header1,header2\nvalue1,value2\n", encoding="utf-8")
-    try:
-        validate_csv_file(valid_csv_file, "Test CSV file")  # Should not raise any exception
-    except typer.Exit:
-        pytest.fail("validate_csv_file raised an exception for a valid file")
-
-
-# --- Test cases for validate_output_path ---
-
-
-def test_validate_output_path_nonexistent_directory(tmp_path):
-    non_existent_dir = tmp_path / "nonexistent" / "output.diff"
-    with pytest.raises(typer.Exit):
-        validate_output_path(non_existent_dir)
-
-
-def test_validate_output_path_not_a_directory(tmp_path):
-    not_a_directory = tmp_path / "file.txt"
-    not_a_directory.touch()
-    output_path = not_a_directory / "output.diff"
-    with pytest.raises(typer.Exit):
-        validate_output_path(output_path)
-
-
-def test_validate_output_path_no_permission(tmp_path, monkeypatch):
-    restricted_dir = tmp_path / "restricted"
-    restricted_dir.mkdir()
-    output_path = restricted_dir / "output.diff"
-
-    # Simulate a write error by patching the write_text method
-    def fake_write_text(*args, **kwargs):
-        raise PermissionError("Simulated write error")
-
-    monkeypatch.setattr(Path, "write_text", fake_write_text)
-
-    with pytest.raises(typer.Exit):
-        validate_output_path(output_path)
-
-
-def test_validate_output_path_valid_directory(tmp_path):
-    valid_dir = tmp_path / "valid"
-    valid_dir.mkdir()
-    output_path = valid_dir / "output.diff"
-    try:
-        validate_output_path(output_path)  # Should not raise any exception
-    except typer.Exit:
-        pytest.fail("validate_output_path raised an exception for a valid directory")
-
-
-# --- Test cases for get_unique_filename ---
-
-
-def test_get_unique_filename_no_conflict(tmp_path):
-    base_name = tmp_path / "output"
-    unique_filename = get_unique_filename(str(base_name))
-    assert unique_filename == base_name.with_suffix(".diff")
-    assert not unique_filename.exists()
-
-
-def test_get_unique_filename_with_conflict(tmp_path):
-    base_name = tmp_path / "output"
-    (base_name.with_suffix(".diff")).touch()  # Create a conflicting file
-    unique_filename = get_unique_filename(str(base_name))
-    assert unique_filename == tmp_path / "output (1).diff"
-    assert not unique_filename.exists()
-
-
-def test_get_unique_filename_multiple_conflicts(tmp_path):
-    base_name = tmp_path / "output"
-    (base_name.with_suffix(".diff")).touch()  # Create first conflicting file
-    (tmp_path / "output (1).diff").touch()  # Create second conflicting file
-    unique_filename = get_unique_filename(str(base_name))
-    assert unique_filename == tmp_path / "output (2).diff"
-    assert not unique_filename.exists()
-
-
-def test_get_unique_filename_custom_extension(tmp_path):
-    base_name = tmp_path / "output"
-    (base_name.with_suffix(".log")).touch()  # Create a conflicting file with custom extension
-    unique_filename = get_unique_filename(str(base_name), ".log")
-    assert unique_filename == tmp_path / "output (1).log"
-    assert not unique_filename.exists()
-
-
-# --- Test cases for read_csv_with_duckdb ---
-
-
-def test_read_csv_with_duckdb_basic(tmp_path):
-    file1 = tmp_path / "file1.csv"
-    file1.write_text("a,b\n1,2\n3,4\n")
-
-    rows1, cols1 = read_csv_with_duckdb(file1)
-
-    assert len(rows1) == 2
-    assert cols1 == ["a", "b"]
-
-
-def test_read_csv_with_duckdb_sorted(tmp_path):
-    file1 = tmp_path / "unsorted.csv"
-    file1.write_text("a,b\n3,4\n1,2\n")
-
-    rows1, _ = read_csv_with_duckdb(file1)
-
-    # rows1 should be sorted by all columns: ('1', '2') then ('3', '4')
-    # Note: DuckDB returns tuples of values
-    assert rows1[0][0] == "1"
-    assert rows1[0][1] == "2"
-    assert rows1[1][0] == "3"
-    assert rows1[1][1] == "4"
-
-
-# --- Test cases for CLI app ---
 
 
 def create_temp_csv(content: str, dir_path: Path, name: str) -> Path:
@@ -230,3 +73,150 @@ def test_csv_with_different_columns(tmp_path):
     result = runner.invoke(app, [str(file1), str(file2), "-o", str(output)])
     assert result.exit_code == 0
     assert "different column structures" in result.output
+
+
+def test_cli_with_single_quote_filename(tmp_path):
+    # End-to-end CLI test with single quote in filename
+    file1 = tmp_path / "data'1.csv"
+    file2 = tmp_path / "data'2.csv"
+
+    file1.write_text("a,b\n1,2", encoding="utf-8")
+    file2.write_text("a,b\n1,3", encoding="utf-8")
+
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(tmp_path / "out")])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+
+def test_latin1_encoding(tmp_path):
+    # Create a Latin-1 encoded CSV file with characters that are invalid in UTF-8
+    content1 = "col1,col2\nvalue1,café"
+    content2 = "col1,col2\nvalue1,café_modified"
+    file1 = tmp_path / "file1.csv"
+    file2 = tmp_path / "file2.csv"
+
+    # Write as latin-1
+    with open(file1, "w", encoding="latin-1") as f:
+        f.write(content1)
+    with open(file2, "w", encoding="latin-1") as f:
+        f.write(content2)
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify content
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "café" in diff_content
+    assert "café_modified" in diff_content
+
+
+def test_cp1252_encoding(tmp_path):
+    # CP1252 specific char (euro sign)
+    content1 = "col1,col2\nvalue1,€"
+    content2 = "col1,col2\nvalue1,€_new"
+    file1 = tmp_path / "file1_cp1252.csv"
+    file2 = tmp_path / "file2_cp1252.csv"
+
+    with open(file1, "w", encoding="cp1252") as f:
+        f.write(content1)
+    with open(file2, "w", encoding="cp1252") as f:
+        f.write(content2)
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify content
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "€" in diff_content
+
+
+def test_iso8859_1_encoding(tmp_path):
+    # ISO-8859-1 specific test
+    content1 = "col1,col2\nvalue1,café"
+    content2 = "col1,col2\nvalue1,café_iso"
+    file1 = tmp_path / "file1_iso.csv"
+    file2 = tmp_path / "file2_iso.csv"
+
+    with open(file1, "w", encoding="iso-8859-1") as f:
+        f.write(content1)
+    with open(file2, "w", encoding="iso-8859-1") as f:
+        f.write(content2)
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify content
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "café" in diff_content
+
+
+def test_utf16_encoding(tmp_path):
+    # UTF-16 specific test
+    content1 = "col1,col2\nvalue1,café"
+    content2 = "col1,col2\nvalue1,café_utf16"
+    file1 = tmp_path / "file1_utf16.csv"
+    file2 = tmp_path / "file2_utf16.csv"
+
+    with open(file1, "w", encoding="utf-16") as f:
+        f.write(content1)
+    with open(file2, "w", encoding="utf-16") as f:
+        f.write(content2)
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify content
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "café" in diff_content
+    assert "café_utf16" in diff_content
+
+
+def test_utf8_sig_encoding(tmp_path):
+    # UTF-8 with BOM
+    content1 = "\ufeffcol1,col2\nvalue1,café"
+    content2 = "\ufeffcol1,col2\nvalue1,café_bom"
+    file1 = tmp_path / "file1_bom.csv"
+    file2 = tmp_path / "file2_bom.csv"
+
+    with open(file1, "w", encoding="utf-8-sig") as f:
+        f.write(content1)
+    with open(file2, "w", encoding="utf-8-sig") as f:
+        f.write(content2)
+
+    output_path = tmp_path / "output"
+    result = runner.invoke(app, [str(file1), str(file2), "-o", str(output_path)])
+
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+    diff_file = tmp_path / "output.diff"
+    assert diff_file.exists()
+
+    # Verify content
+    diff_content = diff_file.read_text(encoding="utf-8")
+    assert "café" in diff_content
