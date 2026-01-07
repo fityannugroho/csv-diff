@@ -121,17 +121,18 @@ def compare(
         with console.status("Computing differences...") as status:
             # 3. Compute diff
             diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
-            diff_lines = list(diff)  # Convert generator to list to check if empty
 
             # 4. Write output
             status.update("Writing result...")
+            has_differences = False
             with create_unique_output_file(validated_output) as f:
                 actual_output_path = f.name  # Get actual filename created
-                for line in diff_lines:
+                for line in diff:
                     f.write(line + "\n")
+                    has_differences = True
 
         # Check if files are identical (no diff content)
-        if not diff_lines:
+        if not has_differences:
             typer.secho(
                 f"No differences found. Files are identical. Empty diff saved to `{actual_output_path}`",
                 fg=typer.colors.BRIGHT_CYAN,
