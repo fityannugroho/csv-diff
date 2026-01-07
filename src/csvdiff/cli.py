@@ -1,5 +1,8 @@
 import csv
 import io
+import os
+import shutil
+import tempfile
 import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
@@ -15,6 +18,28 @@ app = typer.Typer()
 console = Console()
 
 
+def detect_encoding(file_path: Path) -> str:
+    """Detect encoding by trying a prioritized list of encodings."""
+    encodings = [
+        "utf-8",
+        "utf-8-sig",
+        "cp1252",
+        "iso-8859-1",
+        "utf-16",
+    ]
+
+    for encoding in encodings:
+        try:
+            with open(file_path, encoding=encoding) as f:
+                f.read(4096)  # Read a chunk to verify
+            return encoding
+        except UnicodeError:
+            continue
+
+    # If we get here, none worked. Raise an error that will be caught by the caller.
+    raise ValueError(f"Could not detect encoding for {file_path}. Tried: {', '.join(encodings)}")
+
+
 def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
     """Convert list of row tuples to CSV string lines."""
     lines = []
@@ -28,22 +53,48 @@ def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
 
 def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
     """Read and sort a single CSV file using DuckDB for memory-efficient processing."""
+    encoding = detect_encoding(file_path)
     conn = duckdb.connect()
+    temp_file_path = None
 
     try:
+        target_path = file_path
+
+        # If encoding is not UTF-8, convert to a temporary UTF-8 file
+        # DuckDB only supports UTF-8 for CSV reading efficiently
+        if encoding.lower() not in ["utf-8", "utf8"]:
+            # Create a temporary file
+            fd, temp_path = tempfile.mkstemp(suffix=".csv")
+            os.close(fd)
+            temp_file_path = Path(temp_path)
+
+            # Convert to UTF-8
+            # We read with detected encoding and write as UTF-8
+            with open(file_path, encoding=encoding) as src:
+                with open(temp_file_path, "w", encoding="utf-8") as dst:
+                    shutil.copyfileobj(src, dst)
+
+            target_path = temp_file_path
+
         # Use DuckDB to read CSV
         # We assume headers exist as per limitations
         # all_varchar=True ensures all data is treated as strings to match original behavior
 
         # Read and sort file using Relational API
         # This approach is safe from SQL injection and faster than parameterized SQL queries
-        rel = conn.read_csv(str(file_path), all_varchar=True).order("ALL")
+        rel = conn.read_csv(str(target_path), all_varchar=True).order("ALL")
         rows = rel.fetchall()
         cols = rel.columns
 
         return rows, cols
     finally:
         conn.close()
+        # Clean up temporary file if it exists
+        if temp_file_path and temp_file_path.exists():
+            try:
+                temp_file_path.unlink()
+            except Exception:
+                pass  # Best effort cleanup
 
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
@@ -62,7 +113,8 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
 
     # Check if file is readable
     try:
-        with open(file_path) as f:
+        encoding = detect_encoding(file_path)
+        with open(file_path, encoding=encoding) as f:
             f.read(1)  # Try to read first character
     except PermissionError:
         typer.secho(f"Error: No permission to read {file_label} '{file_path}'.", fg=typer.colors.RED, err=True)
@@ -179,7 +231,7 @@ def compare(
 
             # 4. Write output
             status.update("Writing result...")
-            with open(output_path, "w") as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 for line in diff:
                     f.write(line + "\n")
 
