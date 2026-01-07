@@ -36,9 +36,40 @@ def version_option_callback(value: bool):
 
 @app.command(no_args_is_help=True)
 def compare(
-    file1: Annotated[Path, typer.Argument(help="Path to the first CSV file.")],
-    file2: Annotated[Path, typer.Argument(help="Path to the second CSV file.")],
-    output: Annotated[str, typer.Option("--output", "-o", help="Specify the output file name.")] = "result",
+    file1: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=False,
+            help="Path to the first CSV file.",
+        ),
+    ],
+    file2: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=False,
+            help="Path to the second CSV file.",
+        ),
+    ],
+    output: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            exists=False,
+            file_okay=True,
+            dir_okay=False,
+            resolve_path=False,
+            help="Specify the output file path (.diff, .txt, or .log extension).",
+        ),
+    ] = Path("result.diff"),
     version: Annotated[
         Optional[bool],
         typer.Option(
@@ -52,8 +83,9 @@ def compare(
     # Validate input files
     validate_csv_file(file1, "First CSV file")
     validate_csv_file(file2, "Second CSV file")
-    # Validate output path
-    validate_output_path(output)
+
+    # Validate output path (security and business rules)
+    validated_output = validate_output_path(output)
 
     start_time = time.time()
     try:
@@ -89,15 +121,23 @@ def compare(
         with console.status("Computing differences...") as status:
             # 3. Compute diff
             diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
+            diff_lines = list(diff)  # Convert generator to list to check if empty
 
             # 4. Write output
             status.update("Writing result...")
-            with create_unique_output_file(output, extension=".diff") as f:
-                output_path = f.name  # Get actual filename created
-                for line in diff:
+            with create_unique_output_file(validated_output) as f:
+                actual_output_path = f.name  # Get actual filename created
+                for line in diff_lines:
                     f.write(line + "\n")
 
-        typer.secho(f"Success. The result saved to `{output_path}`", fg=typer.colors.BRIGHT_GREEN)
+        # Check if files are identical (no diff content)
+        if not diff_lines:
+            typer.secho(
+                f"No differences found. Files are identical. Empty diff saved to `{actual_output_path}`",
+                fg=typer.colors.BRIGHT_CYAN,
+            )
+        else:
+            typer.secho(f"Success. The result saved to `{actual_output_path}`", fg=typer.colors.BRIGHT_GREEN)
 
     except typer.Exit:
         raise
