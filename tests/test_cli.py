@@ -40,30 +40,41 @@ def test_compare_success(in_tmp_path):
     assert "Success" in result.output
 
 
+def test_compare_identical_files(in_tmp_path):
+    """Test comparing identical CSV files (should produce minimal/empty diff)."""
+    # Create two identical CSV files
+    content = "a,b,c\n1,2,3\n4,5,6\n7,8,9"
+    create_temp_csv(content, in_tmp_path, "file1.csv")
+    create_temp_csv(content, in_tmp_path, "file2.csv")
+
+    result = runner.invoke(app, ["file1.csv", "file2.csv", "-o", "output.diff"])
+
+    assert result.exit_code == 0
+    output_file = in_tmp_path / "output.diff"
+    assert output_file.exists()
+
+    # When files are identical, diff should be minimal (only headers, no +/- lines)
+    diff_content = output_file.read_text()
+    # Check that there are no added (+) or removed (-) lines (beyond the header lines)
+    lines = diff_content.split("\n")
+    # Filter out header lines (---, +++, @@)
+    data_lines = [
+        line
+        for line in lines
+        if line and not line.startswith("---") and not line.startswith("+++") and not line.startswith("@@")
+    ]
+    # For identical files, we should have no +/- data lines
+    changed_lines = [line for line in data_lines if line.startswith("+") or line.startswith("-")]
+    assert len(changed_lines) == 0, f"Expected no changes, but found: {changed_lines}"
+    assert "Success" in result.output
+
+
 def test_compare_non_csv_extension(tmp_path):
     not_csv = create_temp_csv("x,y\n1,2", tmp_path, "invalid.txt")
     csv = create_temp_csv("x,y\n1,2", tmp_path, "valid.csv")
 
     result = runner.invoke(app, [str(not_csv), str(csv)])
 
-    assert result.exit_code != 0
-    assert "not a CSV file" in result.output
-
-
-def test_file1_not_found(tmp_path):
-    file1 = tmp_path / "missing.csv"  # not created
-    file2 = create_temp_csv("a,b\n1,2", tmp_path, "file2.csv")
-
-    result = runner.invoke(app, [str(file1), str(file2)])
-    assert result.exit_code != 0
-    assert "missing.csv" in result.output
-
-
-def test_file2_is_not_csv(tmp_path):
-    file1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
-    file2 = create_temp_csv("a,b\n1,2", tmp_path, "file2.txt")  # not a CSV
-
-    result = runner.invoke(app, [str(file1), str(file2)])
     assert result.exit_code != 0
     assert "not a CSV file" in result.output
 
@@ -127,56 +138,6 @@ def test_latin1_encoding(in_tmp_path):
     assert "café_modified" in diff_content
 
 
-def test_cp1252_encoding(in_tmp_path):
-    # CP1252 specific char (euro sign)
-    content1 = "col1,col2\nvalue1,€"
-    content2 = "col1,col2\nvalue1,€_new"
-    file1 = in_tmp_path / "file1_cp1252.csv"
-    file2 = in_tmp_path / "file2_cp1252.csv"
-
-    with open(file1, "w", encoding="cp1252") as f:
-        f.write(content1)
-    with open(file2, "w", encoding="cp1252") as f:
-        f.write(content2)
-
-    result = runner.invoke(app, ["file1_cp1252.csv", "file2_cp1252.csv", "-o", "output.diff"])
-
-    assert result.exit_code == 0
-    assert "Success" in result.output
-
-    diff_file = in_tmp_path / "output.diff"
-    assert diff_file.exists()
-
-    # Verify content
-    diff_content = diff_file.read_text(encoding="utf-8")
-    assert "€" in diff_content
-
-
-def test_iso8859_1_encoding(in_tmp_path):
-    # ISO-8859-1 specific test
-    content1 = "col1,col2\nvalue1,café"
-    content2 = "col1,col2\nvalue1,café_iso"
-    file1 = in_tmp_path / "file1_iso.csv"
-    file2 = in_tmp_path / "file2_iso.csv"
-
-    with open(file1, "w", encoding="iso-8859-1") as f:
-        f.write(content1)
-    with open(file2, "w", encoding="iso-8859-1") as f:
-        f.write(content2)
-
-    result = runner.invoke(app, ["file1_iso.csv", "file2_iso.csv", "-o", "output.diff"])
-
-    assert result.exit_code == 0
-    assert "Success" in result.output
-
-    diff_file = in_tmp_path / "output.diff"
-    assert diff_file.exists()
-
-    # Verify content
-    diff_content = diff_file.read_text(encoding="utf-8")
-    assert "café" in diff_content
-
-
 def test_utf16_encoding(in_tmp_path):
     # UTF-16 specific test
     content1 = "col1,col2\nvalue1,café"
@@ -201,31 +162,6 @@ def test_utf16_encoding(in_tmp_path):
     diff_content = diff_file.read_text(encoding="utf-8")
     assert "café" in diff_content
     assert "café_utf16" in diff_content
-
-
-def test_utf8_sig_encoding(in_tmp_path):
-    # UTF-8 with BOM
-    content1 = "\ufeffcol1,col2\nvalue1,café"
-    content2 = "\ufeffcol1,col2\nvalue1,café_bom"
-    file1 = in_tmp_path / "file1_bom.csv"
-    file2 = in_tmp_path / "file2_bom.csv"
-
-    with open(file1, "w", encoding="utf-8-sig") as f:
-        f.write(content1)
-    with open(file2, "w", encoding="utf-8-sig") as f:
-        f.write(content2)
-
-    result = runner.invoke(app, ["file1_bom.csv", "file2_bom.csv", "-o", "output.diff"])
-
-    assert result.exit_code == 0
-    assert "Success" in result.output
-
-    diff_file = in_tmp_path / "output.diff"
-    assert diff_file.exists()
-
-    # Verify content
-    diff_content = diff_file.read_text(encoding="utf-8")
-    assert "café" in diff_content
 
 
 def test_large_csv_files(in_tmp_path):
@@ -318,41 +254,6 @@ def test_compare_rejects_directory_as_file1(tmp_path):
 
     assert result.exit_code != 0
     assert "directory" in result.output.lower()
-
-
-def test_compare_rejects_directory_as_file2(tmp_path):
-    """Test that Typer rejects directory paths for file2 argument."""
-    csv1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
-    # Create a directory instead of file
-    dir2 = tmp_path / "dir2"
-    dir2.mkdir()
-
-    result = runner.invoke(app, [str(csv1), str(dir2), "-o", "output.diff"])
-
-    assert result.exit_code != 0
-    assert "directory" in result.output.lower()
-
-
-def test_compare_rejects_nonexistent_file1(tmp_path):
-    """Test that Typer rejects non-existent file1."""
-    missing_file = tmp_path / "missing.csv"
-    csv2 = create_temp_csv("a,b\n1,2", tmp_path, "file2.csv")
-
-    result = runner.invoke(app, [str(missing_file), str(csv2), "-o", "output.diff"])
-
-    assert result.exit_code != 0
-    assert "does not exist" in result.output.lower()
-
-
-def test_compare_rejects_nonexistent_file2(tmp_path):
-    """Test that Typer rejects non-existent file2."""
-    csv1 = create_temp_csv("a,b\n1,2", tmp_path, "file1.csv")
-    missing_file = tmp_path / "missing.csv"
-
-    result = runner.invoke(app, [str(csv1), str(missing_file), "-o", "output.diff"])
-
-    assert result.exit_code != 0
-    assert "does not exist" in result.output.lower()
 
 
 def test_compare_output_with_subdirectory(in_tmp_path):

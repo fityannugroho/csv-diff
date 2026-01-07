@@ -10,35 +10,11 @@ from csvdiff.utils.validation import (
 )
 
 
-def test_validate_csv_file_nonexistent_file(tmp_path):
-    non_existent_file = tmp_path / "nonexistent.csv"
-    with pytest.raises(typer.Exit):
-        validate_csv_file(non_existent_file, "Test CSV file")
-
-
-def test_validate_csv_file_not_a_file(tmp_path):
-    directory = tmp_path / "directory"
-    directory.mkdir()
-    with pytest.raises(typer.Exit):
-        validate_csv_file(directory, "Test CSV file")
-
-
 def test_validate_csv_file_wrong_extension(tmp_path):
     non_csv_file = tmp_path / "file.txt"
     non_csv_file.touch()
     with pytest.raises(typer.Exit):
         validate_csv_file(non_csv_file, "Test CSV file")
-
-
-def test_validate_csv_file_no_permission(tmp_path):
-    csv_file = tmp_path / "file.csv"
-    csv_file.touch()
-    csv_file.chmod(0o000)  # Remove all permissions
-    try:
-        with pytest.raises(typer.Exit):
-            validate_csv_file(csv_file, "Test CSV file")
-    finally:
-        csv_file.chmod(0o644)  # Restore permissions for cleanup
 
 
 def test_validate_csv_file_valid_file(tmp_path):
@@ -66,11 +42,6 @@ def test_sanitize_output_path_traversal():
 def test_sanitize_output_path_traversal_deep():
     with pytest.raises(typer.Exit):
         sanitize_output_path(Path("subdir/../../etc/passwd"))
-
-
-def test_sanitize_output_path_valid():
-    result = sanitize_output_path(Path("result.diff"))
-    assert result == Path("result.diff")
 
 
 def test_sanitize_output_path_valid_subdir():

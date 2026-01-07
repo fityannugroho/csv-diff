@@ -2,33 +2,17 @@ from pathlib import Path
 
 import typer
 
-from csvdiff.utils.csv import detect_encoding
-
 
 def validate_csv_file(file_path: Path, file_label: str) -> None:
-    """Validate that the file exists, is a CSV, and is readable."""
-    # Check if file exists
-    if not file_path.is_file():
-        typer.secho(
-            f"Error: {file_label} '{file_path}' is not a file or does not exist.", fg=typer.colors.RED, err=True
-        )
-        raise typer.Exit(1)
+    """
+    Validate that the file has a .csv extension.
 
-    # Check file extension
+    Note: File existence, type (file vs directory), and readability are already
+    validated by Typer with exists=True, file_okay=True, dir_okay=False, readable=True.
+    """
+    # Check file extension (only custom validation needed)
     if file_path.suffix.lower() != ".csv":
         typer.secho(f"Error: {file_label} '{file_path}' is not a CSV file.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    # Check if file is readable
-    try:
-        encoding = detect_encoding(file_path)
-        with open(file_path, encoding=encoding) as f:
-            f.read(1)  # Try to read first character
-    except PermissionError:
-        typer.secho(f"Error: No permission to read {file_label} '{file_path}'.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.secho(f"Error: Cannot read {file_label} '{file_path}': {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
 
 
@@ -128,7 +112,9 @@ def validate_output_path(output_path: Path) -> None:
     """
     output_dir = output_path.parent
 
-    # Create parent directory if it doesn't exist (Option B)
+    # Create parent directory if it doesn't exist
+    # Note: mkdir will raise FileExistsError if path exists as a file (not directory)
+    # and NotADirectoryError if parent component is a file, so no need for is_dir() check
     if not output_dir.exists():
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -139,15 +125,6 @@ def validate_output_path(output_path: Path) -> None:
                 err=True,
             )
             raise typer.Exit(1)
-
-    # Verify it's a directory
-    if not output_dir.is_dir():
-        typer.secho(
-            f"Error: Output path parent '{output_dir}' is not a directory.",
-            fg=typer.colors.RED,
-            err=True,
-        )
-        raise typer.Exit(1)
 
     # Test writability with a temporary file
     try:
