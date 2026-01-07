@@ -9,7 +9,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from csvdiff.utils.csv import read_csv_with_duckdb, rows_to_csv_lines
-from csvdiff.utils.files import get_unique_filename
+from csvdiff.utils.files import create_unique_output_file
 from csvdiff.utils.validation import validate_csv_file, validate_output_path
 
 app = typer.Typer()
@@ -52,10 +52,8 @@ def compare(
     # Validate input files
     validate_csv_file(file1, "First CSV file")
     validate_csv_file(file2, "Second CSV file")
-
-    # Determine output path and validate
-    output_path = get_unique_filename(output, ".diff")
-    validate_output_path(output_path)
+    # Validate output path
+    validate_output_path(output)
 
     start_time = time.time()
     try:
@@ -86,7 +84,8 @@ def compare(
 
             # 4. Write output
             status.update("Writing result...")
-            with open(output_path, "w", encoding="utf-8") as f:
+            with create_unique_output_file(output, extension=".diff") as f:
+                output_path = f.name  # Get actual filename created
                 for line in diff:
                     f.write(line + "\n")
 
@@ -94,8 +93,8 @@ def compare(
 
     except typer.Exit:
         raise
-    except PermissionError:
-        typer.secho(f"Error: No permission to write to file '{output_path}'.", fg=typer.colors.RED, err=True)
+    except PermissionError as e:
+        typer.secho(f"Error: No permission to write to file: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     except Exception as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)

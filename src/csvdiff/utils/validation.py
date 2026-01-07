@@ -32,8 +32,12 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
         raise typer.Exit(1)
 
 
-def validate_output_path(output_path: Path) -> None:
+def validate_output_path(output_path: Path | str) -> None:
     """Validate that the output directory is writable."""
+    # Convert string to Path if needed
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+
     output_dir = output_path.parent
 
     # Check if parent directory exists
