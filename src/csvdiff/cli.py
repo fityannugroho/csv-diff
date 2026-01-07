@@ -1,174 +1,19 @@
-import csv
-import io
-import os
-import shutil
-import tempfile
 import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Optional
 
-import duckdb
 import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
+from csvdiff.utils.csv import read_csv_with_duckdb, rows_to_csv_lines
+from csvdiff.utils.files import get_unique_filename
+from csvdiff.utils.validation import validate_csv_file, validate_output_path
+
 app = typer.Typer()
 console = Console()
-
-
-def detect_encoding(file_path: Path) -> str:
-    """Detect encoding by trying a prioritized list of encodings."""
-    # Try to detect BOM first
-    try:
-        with open(file_path, "rb") as f:
-            raw = f.read(4)
-        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
-            return "utf-16"
-        if raw.startswith(b"\xef\xbb\xbf"):
-            return "utf-8-sig"
-    except Exception:
-        pass
-
-    encodings = [
-        "utf-8",
-        "cp1252",
-        "iso-8859-1",
-    ]
-
-    for encoding in encodings:
-        try:
-            with open(file_path, encoding=encoding) as f:
-                # Read a larger chunk to be more certain
-                f.read(8192)
-            return encoding
-        except UnicodeError:
-            continue
-
-    # If we get here, none worked. Raise an error that will be caught by the caller.
-    raise ValueError(f"Could not detect encoding for {file_path}. Tried: {', '.join(encodings)}")
-
-
-def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
-    """Convert list of row tuples to CSV string lines."""
-    lines = []
-    for row in rows:
-        output = io.StringIO()
-        writer = csv.writer(output, lineterminator="")
-        writer.writerow(row)
-        lines.append(output.getvalue())
-    return lines
-
-
-def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
-    """Read and sort a single CSV file using DuckDB for memory-efficient processing."""
-    encoding = detect_encoding(file_path)
-    conn = duckdb.connect()
-    temp_file_path = None
-
-    try:
-        target_path = file_path
-
-        # If encoding is not UTF-8, convert to a temporary UTF-8 file
-        # DuckDB only supports UTF-8 for CSV reading efficiently
-        if encoding.lower() not in ["utf-8", "utf8"]:
-            # Create a temporary file
-            fd, temp_path = tempfile.mkstemp(suffix=".csv")
-            os.close(fd)
-            temp_file_path = Path(temp_path)
-
-            # Convert to UTF-8
-            # We read with detected encoding and write as UTF-8
-            with open(file_path, encoding=encoding) as src:
-                with open(temp_file_path, "w", encoding="utf-8") as dst:
-                    shutil.copyfileobj(src, dst)
-
-            target_path = temp_file_path
-
-        # Use DuckDB to read CSV
-        # We assume headers exist as per limitations
-        # all_varchar=True ensures all data is treated as strings to match original behavior
-
-        # Read and sort file using Relational API
-        # This approach is safe from SQL injection and faster than parameterized SQL queries
-        rel = conn.read_csv(str(target_path), all_varchar=True).order("ALL")
-        rows = rel.fetchall()
-        cols = rel.columns
-
-        return rows, cols
-    finally:
-        conn.close()
-        # Clean up temporary file if it exists
-        if temp_file_path and temp_file_path.exists():
-            try:
-                temp_file_path.unlink()
-            except Exception:
-                pass  # Best effort cleanup
-
-
-def validate_csv_file(file_path: Path, file_label: str) -> None:
-    """Validate that the file exists, is a CSV, and is readable."""
-    # Check if file exists
-    if not file_path.is_file():
-        typer.secho(
-            f"Error: {file_label} '{file_path}' is not a file or does not exist.", fg=typer.colors.RED, err=True
-        )
-        raise typer.Exit(1)
-
-    # Check file extension
-    if file_path.suffix.lower() != ".csv":
-        typer.secho(f"Error: {file_label} '{file_path}' is not a CSV file.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    # Check if file is readable
-    try:
-        encoding = detect_encoding(file_path)
-        with open(file_path, encoding=encoding) as f:
-            f.read(1)  # Try to read first character
-    except PermissionError:
-        typer.secho(f"Error: No permission to read {file_label} '{file_path}'.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.secho(f"Error: Cannot read {file_label} '{file_path}': {e}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-
-def validate_output_path(output_path: Path) -> None:
-    """Validate that the output directory is writable."""
-    output_dir = output_path.parent
-
-    # Check if parent directory exists
-    if not output_dir.exists():
-        typer.secho(f"Error: Output directory '{output_dir}' does not exist.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    # Check if we can write to the directory
-    if not output_dir.is_dir():
-        typer.secho(f"Error: Output path parent '{output_dir}' is not a directory.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-    # Check writability with a temporary file
-    try:
-        test_file = output_dir / ".write_test"
-        test_file.write_text("test")
-        test_file.unlink()
-    except PermissionError:
-        typer.secho(f"Error: No permission to write to directory '{output_dir}'.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.secho(f"Error: Cannot write to directory '{output_dir}': {e}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
-
-
-def get_unique_filename(base_name: str, extension: str = ".diff") -> Path:
-    """Generate a unique filename by appending a counter if necessary."""
-    output_path = Path(f"{base_name}{extension}")
-    counter = 1
-    while output_path.exists():
-        output_path = Path(f"{base_name} ({counter}){extension}")
-        counter += 1
-    return output_path
 
 
 def version_option_callback(value: bool):
