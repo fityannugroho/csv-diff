@@ -2,17 +2,16 @@ import io
 from pathlib import Path
 
 
-def create_unique_output_file(base_path: Path, extension: str = ".diff") -> io.TextIOWrapper:
+def create_unique_output_file(output_path: Path) -> io.TextIOWrapper:
     """
     Atomically create a unique output file and return file handle.
 
     This function eliminates race conditions by using exclusive file creation mode ('x').
     If a file with the target name already exists, it automatically retries with an
-    incremented counter.
+    incremented counter inserted before the extension.
 
     Args:
-        base_path: Path object for the output file (without extension)
-        extension: File extension (default: ".diff")
+        output_path: Full Path object including filename and extension (e.g., "result.diff")
 
     Returns:
         file_handle where the file is already opened for writing
@@ -25,23 +24,24 @@ def create_unique_output_file(base_path: Path, extension: str = ".diff") -> io.T
     counter = 0
     max_attempts = 1000
 
-    # Get the base name and parent directory
-    base_name = base_path.name
-    parent_dir = base_path.parent
+    # Extract components: parent dir, stem (filename without extension), suffix (extension)
+    parent_dir = output_path.parent
+    stem = output_path.stem
+    suffix = output_path.suffix
 
     while counter < max_attempts:
         if counter == 0:
-            filename = f"{base_name}{extension}"
+            filename = f"{stem}{suffix}"
         else:
-            filename = f"{base_name} ({counter}){extension}"
+            filename = f"{stem} ({counter}){suffix}"
 
         # Construct full path: parent_dir / filename
-        output_path = parent_dir / filename
+        full_path = parent_dir / filename
 
         try:
             # 'x' mode: exclusive creation (atomic operation)
             # Fails immediately if file exists - no race condition
-            return open(output_path, "x", encoding="utf-8")
+            return open(full_path, "x", encoding="utf-8")
         except FileExistsError:
             # File exists, try next counter
             counter += 1

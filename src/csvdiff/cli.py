@@ -40,9 +40,40 @@ def version_option_callback(value: bool):
 
 @app.command(no_args_is_help=True)
 def compare(
-    file1: Annotated[Path, typer.Argument(help="Path to the first CSV file.")],
-    file2: Annotated[Path, typer.Argument(help="Path to the second CSV file.")],
-    output: Annotated[str, typer.Option("--output", "-o", help="Specify the output file name.")] = "result",
+    file1: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=False,
+            help="Path to the first CSV file.",
+        ),
+    ],
+    file2: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+            readable=True,
+            resolve_path=False,
+            help="Path to the second CSV file.",
+        ),
+    ],
+    output: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            exists=False,
+            file_okay=True,
+            dir_okay=False,
+            resolve_path=False,
+            help="Specify the output file path (.diff, .txt, or .log extension).",
+        ),
+    ] = Path("result.diff"),
     version: Annotated[
         Optional[bool],
         typer.Option(
@@ -98,7 +129,7 @@ def compare(
 
             # 4. Write output
             status.update("Writing result...")
-            with create_unique_output_file(sanitized_output, extension=".diff") as f:
+            with create_unique_output_file(sanitized_output) as f:
                 actual_output_path = f.name  # Get actual filename created
                 for line in diff:
                     f.write(line + "\n")

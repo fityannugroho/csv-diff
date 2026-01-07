@@ -55,27 +55,60 @@ def test_validate_csv_file_valid_file(tmp_path):
 
 def test_sanitize_output_path_absolute():
     with pytest.raises(typer.Exit):
-        sanitize_output_path("/tmp/result")
+        sanitize_output_path(Path("/tmp/result.diff"))
 
 
 def test_sanitize_output_path_traversal():
     with pytest.raises(typer.Exit):
-        sanitize_output_path("../result")
+        sanitize_output_path(Path("../result.diff"))
 
 
 def test_sanitize_output_path_traversal_deep():
     with pytest.raises(typer.Exit):
-        sanitize_output_path("subdir/../../etc/passwd")
+        sanitize_output_path(Path("subdir/../../etc/passwd"))
 
 
 def test_sanitize_output_path_valid():
-    result = sanitize_output_path("result")
-    assert result == Path("result")
+    result = sanitize_output_path(Path("result.diff"))
+    assert result == Path("result.diff")
 
 
 def test_sanitize_output_path_valid_subdir():
-    result = sanitize_output_path("outputs/result")
-    assert result == Path("outputs/result")
+    result = sanitize_output_path(Path("outputs/result.diff"))
+    assert result == Path("outputs/result.diff")
+
+
+def test_sanitize_output_path_allowed_extensions():
+    """Test that .diff, .txt, .log, and no extension are allowed."""
+    # All should succeed without raising
+    assert sanitize_output_path(Path("result.diff")) == Path("result.diff")
+    assert sanitize_output_path(Path("result.txt")) == Path("result.txt")
+    assert sanitize_output_path(Path("result.log")) == Path("result.log")
+    assert sanitize_output_path(Path("result")) == Path("result")  # No extension
+
+
+def test_sanitize_output_path_case_insensitive_extension():
+    """Test that extensions are case-insensitive."""
+    assert sanitize_output_path(Path("result.DIFF")) == Path("result.DIFF")
+    assert sanitize_output_path(Path("result.TXT")) == Path("result.TXT")
+    assert sanitize_output_path(Path("result.Log")) == Path("result.Log")
+
+
+def test_sanitize_output_path_reject_invalid_extensions():
+    """Test that non-text extensions are rejected."""
+    invalid_extensions = [
+        "result.csv",
+        "result.json",
+        "result.xml",
+        "result.pdf",
+        "result.docx",
+        "result.html",
+        "output.png",
+    ]
+
+    for path_str in invalid_extensions:
+        with pytest.raises(typer.Exit):
+            sanitize_output_path(Path(path_str))
 
 
 # --- Test cases for validate_output_path ---

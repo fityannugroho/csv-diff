@@ -32,7 +32,7 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
         raise typer.Exit(1)
 
 
-def sanitize_output_path(output_name: str) -> Path:
+def sanitize_output_path(output_path: Path) -> Path:
     """
     Sanitize and validate output path to prevent path traversal.
 
@@ -40,10 +40,10 @@ def sanitize_output_path(output_name: str) -> Path:
     - Must be relative path (no absolute paths)
     - Must not traverse parent directories (no ../)
     - Must resolve to location within or below CWD
-    - Can include subdirectories (e.g., "outputs/result")
+    - Can include subdirectories (e.g., "outputs/result.diff")
 
     Args:
-        output_name: User-provided output filename/path (without extension)
+        output_path: User-provided output Path object (with extension)
 
     Returns:
         Sanitized Path object relative to CWD
@@ -51,13 +51,21 @@ def sanitize_output_path(output_name: str) -> Path:
     Raises:
         typer.Exit: If path is invalid or attempts traversal
     """
-    # Convert to Path object
-    output_path = Path(output_name)
-
     # Reject absolute paths
     if output_path.is_absolute():
         typer.secho(
-            f"Error: Output path '{output_name}' must be relative, not absolute.",
+            f"Error: Output path '{output_path}' must be relative, not absolute.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    # Validate extension (must be text file format)
+    suffix = output_path.suffix.lower()
+    allowed_extensions = {".diff", ".txt", ".log", ""}  # "" means no extension
+    if suffix not in allowed_extensions:
+        typer.secho(
+            "Error: Output must be a text file (.diff, .txt, or .log).",
             fg=typer.colors.RED,
             err=True,
         )
@@ -67,7 +75,7 @@ def sanitize_output_path(output_name: str) -> Path:
     # This catches "../", "../../", etc.
     if ".." in output_path.parts:
         typer.secho(
-            f"Error: Output path '{output_name}' contains parent directory traversal (..).",
+            f"Error: Output path '{output_path}' contains parent directory traversal (..).",
             fg=typer.colors.RED,
             err=True,
         )
@@ -85,7 +93,7 @@ def sanitize_output_path(output_name: str) -> Path:
             resolved.relative_to(cwd)
         except ValueError:
             typer.secho(
-                f"Error: Output path '{output_name}' resolves outside working directory.",
+                f"Error: Output path '{output_path}' resolves outside working directory.",
                 fg=typer.colors.RED,
                 err=True,
             )
@@ -96,7 +104,7 @@ def sanitize_output_path(output_name: str) -> Path:
         if isinstance(e, typer.Exit):
             raise
         typer.secho(
-            f"Error: Cannot validate output path '{output_name}': {e}",
+            f"Error: Cannot validate output path '{output_path}': {e}",
             fg=typer.colors.RED,
             err=True,
         )
