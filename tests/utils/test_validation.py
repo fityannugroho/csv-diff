@@ -3,7 +3,11 @@ from pathlib import Path
 import pytest
 import typer
 
-from csvdiff.utils.validation import validate_csv_file, validate_output_path
+from csvdiff.utils.validation import (
+    sanitize_output_path,
+    validate_csv_file,
+    validate_output_path,
+)
 
 
 def test_validate_csv_file_nonexistent_file(tmp_path):
@@ -46,16 +50,56 @@ def test_validate_csv_file_valid_file(tmp_path):
         pytest.fail("validate_csv_file raised an exception for a valid file")
 
 
-def test_validate_output_path_nonexistent_directory(tmp_path):
-    non_existent_dir = tmp_path / "nonexistent" / "output.diff"
+# --- Test cases for sanitize_output_path ---
+
+
+def test_sanitize_output_path_absolute():
     with pytest.raises(typer.Exit):
-        validate_output_path(non_existent_dir)
+        sanitize_output_path("/tmp/result")
+
+
+def test_sanitize_output_path_traversal():
+    with pytest.raises(typer.Exit):
+        sanitize_output_path("../result")
+
+
+def test_sanitize_output_path_traversal_deep():
+    with pytest.raises(typer.Exit):
+        sanitize_output_path("subdir/../../etc/passwd")
+
+
+def test_sanitize_output_path_valid():
+    result = sanitize_output_path("result")
+    assert result == Path("result")
+
+
+def test_sanitize_output_path_valid_subdir():
+    result = sanitize_output_path("outputs/result")
+    assert result == Path("outputs/result")
+
+
+# --- Test cases for validate_output_path ---
+
+
+def test_validate_output_path_auto_create(tmp_path):
+    import os
+
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(tmp_path)
+        output_path = Path("new_dir/output.diff")
+        validate_output_path(output_path)
+        assert (tmp_path / "new_dir").exists()
+        assert (tmp_path / "new_dir").is_dir()
+    finally:
+        os.chdir(original_cwd)
 
 
 def test_validate_output_path_not_a_directory(tmp_path):
     not_a_directory = tmp_path / "file.txt"
     not_a_directory.touch()
     output_path = not_a_directory / "output.diff"
+    # This might fail during mkdir or is_dir check
     with pytest.raises(typer.Exit):
         validate_output_path(output_path)
 

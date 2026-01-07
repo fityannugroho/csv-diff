@@ -32,32 +32,131 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
         raise typer.Exit(1)
 
 
-def validate_output_path(output_path: Path | str) -> None:
-    """Validate that the output directory is writable."""
-    # Convert string to Path if needed
-    if isinstance(output_path, str):
-        output_path = Path(output_path)
+def sanitize_output_path(output_name: str) -> Path:
+    """
+    Sanitize and validate output path to prevent path traversal.
 
+    Rules:
+    - Must be relative path (no absolute paths)
+    - Must not traverse parent directories (no ../)
+    - Must resolve to location within or below CWD
+    - Can include subdirectories (e.g., "outputs/result")
+
+    Args:
+        output_name: User-provided output filename/path (without extension)
+
+    Returns:
+        Sanitized Path object relative to CWD
+
+    Raises:
+        typer.Exit: If path is invalid or attempts traversal
+    """
+    # Convert to Path object
+    output_path = Path(output_name)
+
+    # Reject absolute paths
+    if output_path.is_absolute():
+        typer.secho(
+            f"Error: Output path '{output_name}' must be relative, not absolute.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    # Check for parent directory traversal in components
+    # This catches "../", "../../", etc.
+    if ".." in output_path.parts:
+        typer.secho(
+            f"Error: Output path '{output_name}' contains parent directory traversal (..).",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    # Resolve path and verify it's within CWD
+    # This is defense-in-depth in case symbolic links or other tricks are used
+    try:
+        cwd = Path.cwd().resolve()
+        resolved = (cwd / output_path).resolve()
+
+        # Check if resolved path is within CWD
+        # Use relative_to() which raises ValueError if not relative
+        try:
+            resolved.relative_to(cwd)
+        except ValueError:
+            typer.secho(
+                f"Error: Output path '{output_name}' resolves outside working directory.",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(1)
+
+    except Exception as e:
+        # Avoid double Exit raising if already raised by relative_to check
+        if isinstance(e, typer.Exit):
+            raise
+        typer.secho(
+            f"Error: Cannot validate output path '{output_name}': {e}",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    return output_path
+
+
+def validate_output_path(output_path: Path) -> None:
+    """
+    Validate that the output directory is writable, creating it if necessary.
+
+    Note: This function assumes output_path has already been sanitized
+    by sanitize_output_path() to prevent path traversal.
+
+    Args:
+        output_path: Pre-sanitized Path object (relative to CWD)
+
+    Raises:
+        typer.Exit: If directory cannot be created or isn't writable
+    """
     output_dir = output_path.parent
 
-    # Check if parent directory exists
+    # Create parent directory if it doesn't exist (Option B)
     if not output_dir.exists():
-        typer.secho(f"Error: Output directory '{output_dir}' does not exist.", fg=typer.colors.RED, err=True)
-        raise typer.Exit(1)
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            typer.secho(
+                f"Error: Cannot create output directory '{output_dir}': {e}",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(1)
 
-    # Check if we can write to the directory
+    # Verify it's a directory
     if not output_dir.is_dir():
-        typer.secho(f"Error: Output path parent '{output_dir}' is not a directory.", fg=typer.colors.RED, err=True)
+        typer.secho(
+            f"Error: Output path parent '{output_dir}' is not a directory.",
+            fg=typer.colors.RED,
+            err=True,
+        )
         raise typer.Exit(1)
 
-    # Check writability with a temporary file
+    # Test writability with a temporary file
     try:
         test_file = output_dir / ".write_test"
         test_file.write_text("test")
         test_file.unlink()
     except PermissionError:
-        typer.secho(f"Error: No permission to write to directory '{output_dir}'.", fg=typer.colors.RED, err=True)
+        typer.secho(
+            f"Error: No permission to write to directory '{output_dir}'.",
+            fg=typer.colors.RED,
+            err=True,
+        )
         raise typer.Exit(1)
     except Exception as e:
-        typer.secho(f"Error: Cannot write to directory '{output_dir}': {e}", fg=typer.colors.RED, err=True)
+        typer.secho(
+            f"Error: Cannot write to directory '{output_dir}': {e}",
+            fg=typer.colors.RED,
+            err=True,
+        )
         raise typer.Exit(1)

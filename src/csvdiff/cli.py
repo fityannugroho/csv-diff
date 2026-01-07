@@ -10,7 +10,11 @@ from typing_extensions import Annotated
 
 from csvdiff.utils.csv import read_csv_with_duckdb, rows_to_csv_lines
 from csvdiff.utils.files import create_unique_output_file
-from csvdiff.utils.validation import validate_csv_file, validate_output_path
+from csvdiff.utils.validation import (
+    sanitize_output_path,
+    validate_csv_file,
+    validate_output_path,
+)
 
 app = typer.Typer()
 console = Console()
@@ -52,8 +56,10 @@ def compare(
     # Validate input files
     validate_csv_file(file1, "First CSV file")
     validate_csv_file(file2, "Second CSV file")
-    # Validate output path
-    validate_output_path(output)
+
+    # Sanitize and validate output path
+    sanitized_output = sanitize_output_path(output)
+    validate_output_path(sanitized_output)
 
     start_time = time.time()
     try:
@@ -92,12 +98,12 @@ def compare(
 
             # 4. Write output
             status.update("Writing result...")
-            with create_unique_output_file(output, extension=".diff") as f:
-                output_path = f.name  # Get actual filename created
+            with create_unique_output_file(sanitized_output, extension=".diff") as f:
+                actual_output_path = f.name  # Get actual filename created
                 for line in diff:
                     f.write(line + "\n")
 
-        typer.secho(f"Success. The result saved to `{output_path}`", fg=typer.colors.BRIGHT_GREEN)
+        typer.secho(f"Success. The result saved to `{actual_output_path}`", fg=typer.colors.BRIGHT_GREEN)
 
     except typer.Exit:
         raise

@@ -9,7 +9,7 @@ from csvdiff.utils.files import create_unique_output_file
 def test_create_unique_output_file_no_conflict(tmp_path):
     """Test atomic file creation when no conflict exists."""
     base_name = tmp_path / "output"
-    handle = create_unique_output_file(str(base_name))
+    handle = create_unique_output_file(base_name)
 
     try:
         output_path = Path(handle.name)
@@ -28,7 +28,7 @@ def test_create_unique_output_file_with_conflict(tmp_path):
     conflict_file = base_name.with_suffix(".diff")
     conflict_file.touch()
 
-    handle = create_unique_output_file(str(base_name))
+    handle = create_unique_output_file(base_name)
 
     try:
         output_path = Path(handle.name)
@@ -46,7 +46,7 @@ def test_create_unique_output_file_multiple_conflicts(tmp_path):
     (base_name.with_suffix(".diff")).touch()
     (tmp_path / "output (1).diff").touch()
 
-    handle = create_unique_output_file(str(base_name))
+    handle = create_unique_output_file(base_name)
 
     try:
         output_path = Path(handle.name)
@@ -63,7 +63,7 @@ def test_create_unique_output_file_custom_extension(tmp_path):
     # Create a conflicting file with custom extension
     (base_name.with_suffix(".log")).touch()
 
-    handle = create_unique_output_file(str(base_name), ".log")
+    handle = create_unique_output_file(base_name, ".log")
 
     try:
         output_path = Path(handle.name)
@@ -77,7 +77,7 @@ def test_create_unique_output_file_custom_extension(tmp_path):
 def test_create_unique_output_file_can_write(tmp_path):
     """Test that the returned file handle can be written to."""
     base_name = tmp_path / "output"
-    handle = create_unique_output_file(str(base_name))
+    handle = create_unique_output_file(base_name)
 
     try:
         output_path = Path(handle.name)
@@ -102,7 +102,7 @@ def test_create_unique_output_file_concurrent_creation(tmp_path):
 
     def create_file():
         try:
-            handle = create_unique_output_file(str(base_name))
+            handle = create_unique_output_file(base_path=base_name)
             output_path = Path(handle.name)
             created_files.append(output_path)
             handle.write(f"Thread {threading.current_thread().name}\n")
@@ -143,7 +143,7 @@ def test_create_unique_output_file_concurrent_creation(tmp_path):
 def test_create_unique_output_file_encoding(tmp_path):
     """Test that file is created with UTF-8 encoding."""
     base_name = tmp_path / "output"
-    handle = create_unique_output_file(str(base_name))
+    handle = create_unique_output_file(base_name)
 
     try:
         output_path = Path(handle.name)
@@ -172,7 +172,7 @@ def test_create_unique_output_file_permission_error(tmp_path):
 
     try:
         with pytest.raises(PermissionError):
-            create_unique_output_file(str(base_name))
+            create_unique_output_file(base_name)
     finally:
         # Restore permissions for cleanup
         restricted_dir.chmod(0o755)
