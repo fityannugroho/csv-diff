@@ -62,7 +62,7 @@ def validate_csv_file(file_path: Path, file_label: str) -> None:
 
     # Check if file is readable
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path) as f:
             f.read(1)  # Try to read first character
     except PermissionError:
         typer.secho(f"Error: No permission to read {file_label} '{file_path}'.", fg=typer.colors.RED, err=True)
@@ -89,7 +89,7 @@ def validate_output_path(output_path: Path) -> None:
     # Check writability with a temporary file
     try:
         test_file = output_dir / ".write_test"
-        test_file.write_text("test", encoding="utf-8")
+        test_file.write_text("test")
         test_file.unlink()
     except PermissionError:
         typer.secho(f"Error: No permission to write to directory '{output_dir}'.", fg=typer.colors.RED, err=True)
@@ -179,7 +179,7 @@ def compare(
 
             # 4. Write output
             status.update("Writing result...")
-            with open(output_path, "w", encoding="utf-8") as f:
+            with open(output_path, "w") as f:
                 for line in diff:
                     f.write(line + "\n")
 
