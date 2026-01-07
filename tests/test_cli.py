@@ -66,7 +66,10 @@ def test_compare_identical_files(in_tmp_path):
     # For identical files, we should have no +/- data lines
     changed_lines = [line for line in data_lines if line.startswith("+") or line.startswith("-")]
     assert len(changed_lines) == 0, f"Expected no changes, but found: {changed_lines}"
-    assert "Success" in result.output
+
+    # Verify user-friendly message
+    assert "No differences found" in result.output
+    assert "identical" in result.output.lower()
 
 
 def test_compare_non_csv_extension(tmp_path):

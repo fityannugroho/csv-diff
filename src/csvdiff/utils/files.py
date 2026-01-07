@@ -4,11 +4,13 @@ from pathlib import Path
 
 def create_unique_output_file(output_path: Path) -> io.TextIOWrapper:
     """
-    Atomically create a unique output file and return file handle.
+    Create parent directory if needed, then atomically create a unique output file.
 
-    This function eliminates race conditions by using exclusive file creation mode ('x').
-    If a file with the target name already exists, it automatically retries with an
-    incremented counter inserted before the extension.
+    This function:
+    1. Creates parent directory if it doesn't exist (with parents=True)
+    2. Eliminates race conditions by using exclusive file creation mode ('x')
+    3. If a file with the target name already exists, automatically retries with an
+       incremented counter inserted before the extension
 
     Args:
         output_path: Full Path object including filename and extension (e.g., "result.diff")
@@ -18,8 +20,10 @@ def create_unique_output_file(output_path: Path) -> io.TextIOWrapper:
 
     Raises:
         RuntimeError: If unable to create a unique file after max attempts
-        PermissionError: If lacking permission to create the file
-        OSError: If other OS-level errors occur during file creation
+        PermissionError: If lacking permission to create directory or file
+        FileExistsError: If parent path component exists as a file (not directory)
+        NotADirectoryError: If parent component is a file (from mkdir)
+        OSError: If other OS-level errors occur during directory or file creation
     """
     counter = 0
     max_attempts = 1000
@@ -28,6 +32,12 @@ def create_unique_output_file(output_path: Path) -> io.TextIOWrapper:
     parent_dir = output_path.parent
     stem = output_path.stem
     suffix = output_path.suffix
+
+    # Create parent directory if it doesn't exist
+    # Note: This will raise FileExistsError if parent_dir exists as a file (not directory)
+    # and NotADirectoryError if any parent component is a file
+    if parent_dir != Path(".") and not parent_dir.exists():
+        parent_dir.mkdir(parents=True, exist_ok=True)
 
     while counter < max_attempts:
         if counter == 0:
