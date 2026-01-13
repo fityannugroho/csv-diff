@@ -89,7 +89,7 @@ def compare(
 
     start_time = time.time()
     try:
-        with console.status("Reading and sorting CSV files...") as status:
+        with console.status("Reading CSV files...") as status:
             # 1. Process first CSV file
             rows1, cols1 = read_csv_with_duckdb(file1)
 

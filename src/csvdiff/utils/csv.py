@@ -54,7 +54,7 @@ def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
 
 
 def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
-    """Read and sort a single CSV file using DuckDB for memory-efficient processing."""
+    """Read a single CSV file using DuckDB for memory-efficient processing."""
     encoding = detect_encoding(file_path)
     conn = duckdb.connect()
     temp_file_path = None
@@ -82,9 +82,9 @@ def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
         # We assume headers exist as per limitations
         # all_varchar=True ensures all data is treated as strings to match original behavior
 
-        # Read and sort file using Relational API
+        # Read file using Relational API
         # This approach is safe from SQL injection and faster than parameterized SQL queries
-        rel = conn.read_csv(str(target_path), all_varchar=True).order("ALL")
+        rel = conn.read_csv(str(target_path), all_varchar=True)
         rows = rel.fetchall()
         cols = rel.columns
 
