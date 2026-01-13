@@ -1,6 +1,6 @@
 [project]
 name = "csv-diff-py"
-version = "0.4.0"
+version = "0.4.1"
 description = "CLI tool for comparing CSV files in git diff format"
 authors = [
     { name = "fityannugroho", email = "fityannugroho@gmail.com" }
