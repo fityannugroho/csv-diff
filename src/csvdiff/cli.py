@@ -120,7 +120,7 @@ def compare(
 
         with console.status("Computing differences...") as status:
             # 3. Compute diff
-            diff = unified_diff(lines1, lines2, fromfile=file1.name, tofile=file2.name, lineterm="")
+            diff = unified_diff(lines1, lines2, fromfile=str(file1.resolve()), tofile=str(file2.resolve()), lineterm="")
 
             # 4. Write output
             status.update("Writing result...")
