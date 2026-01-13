@@ -8,7 +8,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from csvdiff.utils.csv import read_csv_with_duckdb, rows_to_csv_lines
+from csvdiff.utils.csv import read_csv_with_duckdb
 from csvdiff.utils.files import create_unique_output_file
 from csvdiff.utils.validation import validate_csv_file, validate_output_path
 
@@ -91,28 +91,20 @@ def compare(
     try:
         with console.status("Reading CSV files...") as status:
             # 1. Process first CSV file
-            rows1, cols1 = read_csv_with_duckdb(file1)
+            lines1, cols1 = read_csv_with_duckdb(file1)
 
             # Validate first file data
-            if not rows1:
+            if not lines1:
                 typer.secho(f"Error: First CSV file '{file1}' contains no data.", fg=typer.colors.RED, err=True)
                 raise typer.Exit(1)
 
-            # Convert to lines and free memory immediately
-            lines1 = rows_to_csv_lines(rows1)
-            del rows1
-
             # 2. Process second CSV file
-            rows2, cols2 = read_csv_with_duckdb(file2)
+            lines2, cols2 = read_csv_with_duckdb(file2)
 
             # Validate second file data
-            if not rows2:
+            if not lines2:
                 typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
                 raise typer.Exit(1)
-
-            # Convert to lines and free memory immediately
-            lines2 = rows_to_csv_lines(rows2)
-            del rows2
 
         # Check column structures (outside spinner for clean messages)
         if cols1 != cols2:

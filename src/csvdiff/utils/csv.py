@@ -40,21 +40,8 @@ def detect_encoding(file_path: Path) -> str:
     raise ValueError(f"Could not detect encoding for {file_path}. Tried: {', '.join(encodings)}")
 
 
-def rows_to_csv_lines(rows: list[tuple]) -> list[str]:
-    """Convert list of row tuples to CSV string lines."""
-    output = io.StringIO()
-    writer = csv.writer(output, lineterminator="")
-    lines = []
-    for row in rows:
-        output.seek(0)
-        output.truncate(0)
-        writer.writerow(row)
-        lines.append(output.getvalue())
-    return lines
-
-
-def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
-    """Read a single CSV file using DuckDB for memory-efficient processing."""
+def read_csv_with_duckdb(file_path: Path) -> tuple[list[str], list[str]]:
+    """Read a single CSV file using DuckDB for memory-efficient processing, returning CSV strings."""
     encoding = detect_encoding(file_path)
     conn = duckdb.connect()
     temp_file_path = None
@@ -79,16 +66,26 @@ def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
             target_path = temp_file_path
 
         # Use DuckDB to read CSV
-        # We assume headers exist as per limitations
-        # all_varchar=True ensures all data is treated as strings to match original behavior
-
-        # Read file using Relational API
-        # This approach is safe from SQL injection and faster than parameterized SQL queries
         rel = conn.read_csv(str(target_path), all_varchar=True)
-        rows = rel.fetchall()
         cols = rel.columns
 
-        return rows, cols
+        # Convert to CSV string lines directly using chunked fetching for efficiency
+        lines = []
+        output = io.StringIO()
+        writer = csv.writer(output, lineterminator="")
+
+        chunk_size = 10000
+        while True:
+            chunk = rel.fetchmany(size=chunk_size)
+            if not chunk:
+                break
+            for row in chunk:
+                output.seek(0)
+                output.truncate(0)
+                writer.writerow(row)
+                lines.append(output.getvalue())
+
+        return lines, cols
     finally:
         conn.close()
         # Clean up temporary file if it exists
@@ -96,4 +93,4 @@ def read_csv_with_duckdb(file_path: Path) -> tuple[list[tuple], list[str]]:
             try:
                 temp_file_path.unlink()
             except Exception:
-                pass  # Best effort cleanup
+                pass
