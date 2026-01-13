@@ -77,18 +77,18 @@ def test_read_csv_with_duckdb_basic(tmp_path):
     assert cols1 == ["a", "b"]
 
 
-def test_read_csv_with_duckdb_sorted(tmp_path):
+def test_read_csv_with_duckdb_unsorted(tmp_path):
     file1 = tmp_path / "unsorted.csv"
     file1.write_text("a,b\n3,4\n1,2\n")
 
     rows1, _ = read_csv_with_duckdb(file1)
 
-    # rows1 should be sorted by all columns: ('1', '2') then ('3', '4')
+    # rows1 should maintain original order: ('3', '4') then ('1', '2')
     # Note: DuckDB returns tuples of values
-    assert rows1[0][0] == "1"
-    assert rows1[0][1] == "2"
-    assert rows1[1][0] == "3"
-    assert rows1[1][1] == "4"
+    assert rows1[0][0] == "3"
+    assert rows1[0][1] == "4"
+    assert rows1[1][0] == "1"
+    assert rows1[1][1] == "2"
 
 
 def test_read_csv_with_single_quote_filename(tmp_path):
