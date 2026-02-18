@@ -2,11 +2,10 @@ import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
-from typing_extensions import Annotated
 
 from csvdiff.utils.csv import read_csv_with_duckdb
 from csvdiff.utils.files import create_unique_output_file

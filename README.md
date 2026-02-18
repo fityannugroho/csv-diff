@@ -75,7 +75,7 @@ uvx --from csv-diff-py csvdiff
 ### Prerequisites
 
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation) package manager
-- Python 3.8 or higher
+- Python 3.9 or higher
 
 > Tip: You can use `uv` to install Python. See the [Python installation guide](https://docs.astral.sh/uv/guides/install-python) for more details.
 
