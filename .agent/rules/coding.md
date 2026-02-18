@@ -12,8 +12,8 @@
 
 ## Code Style & Quality
 - Use docstrings for all public functions. Focus on the *why* rather than the *what* for complex logic.
-- Use Python 3.8+ compatible type hinting syntax.
-- Use `Optional[T]` from `typing` or `typing_extensions` for optional types.
+- Use Python 3.9+ compatible type hinting syntax.
+- Use `Optional[T]` from `typing` for optional types.
 - Annotate all function signatures.
 
 ## Import Order
@@ -29,7 +29,7 @@ from difflib import unified_diff
 from pathlib import Path
 
 import typer
-from typing_extensions import Annotated, Optional
+from typing import Annotated, Optional
 
 from importlib.metadata import version, PackageNotFoundError
 ```

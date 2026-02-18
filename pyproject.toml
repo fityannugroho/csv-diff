@@ -1,12 +1,12 @@
 [project]
 name = "csv-diff-py"
-version = "0.4.2"
+version = "0.5.0"
 description = "CLI tool for comparing CSV files in git diff format"
 authors = [
     { name = "fityannugroho", email = "fityannugroho@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "duckdb>=1.0.0",
     "typer>=0.16.0",
