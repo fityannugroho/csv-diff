@@ -41,7 +41,7 @@ from importlib.metadata import version, PackageNotFoundError
 ## Data Processing Patterns
 - Use `duckdb` for CSV operations to handle larger files efficiently.
 - Read CSVs with `all_varchar=True` to preserve all data as strings.
-- Sort data using SQL: `SELECT * FROM read_csv_auto(...) ORDER BY ALL`.
+
 - Use `pathlib.Path` for all file path operations.
 - Validation functions should raise `typer.Exit(1)` on failure, return `None` on success.
 
