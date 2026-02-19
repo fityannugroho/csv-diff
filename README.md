@@ -48,17 +48,33 @@ csvdiff path/to/file1.csv path/to/file2.csv
 
 ## Installation
 
+### As an Agent Skill
+
+Install this repository as an AI agent skill using the [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add fityannugroho/csv-diff
+```
+
+This makes csv-diff available as a skill in your AI coding agent (OpenCode, Claude Code, Cursor, Codex, and many others). When you mention comparing CSV files, your agent will know how to use this tool.
+
+**What's the difference?**
+- **Skill installation** (above): Adds context to your AI agent so it can help you compare CSV files during conversations
+- **CLI installation** (below): Installs the actual command-line tool you run in your terminal
+
+### As a CLI Tool
+
 This package is available on [PyPI][pypi-package].
 You can install it as a standalone CLI application using [`pipx`](https://pypa.github.io/pipx/) or [`uv`](https://docs.astral.sh/uv/guides/tools).
 
-### Using `pipx`
+#### Using `pipx`
 
 ```bash
 pipx install csv-diff-py
 csvdiff
 ```
 
-### Using `uv`
+#### Using `uv`
 
 ```bash
 uv tool install csv-diff-py
