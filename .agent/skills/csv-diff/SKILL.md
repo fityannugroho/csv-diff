@@ -5,29 +5,13 @@ description: Compare two CSV files and generate a unified diff file showing line
 
 # CSV Diff
 
-Compare two CSV files to identify changes, additions, or deletions between them. Generates unified diff output similar to `git diff`.
+Compare two CSV files to identify changes, additions, or deletions between them and generate a unified diff output similar to `git diff`.
 
 ## When to use
 
-Use this skill when you need to:
-- Compare two versions of a CSV file to see what changed
-- Track updates in datasets, configurations, or tabular data
-- Generate a diff file for code review or documentation
-- Verify data migrations or transformations
-
-## Requirements
-
-The `csv-diff-py` package must be installed in your environment. You can install it globally via `uv`:
-
-```bash
-uv tool install csv-diff-py
-```
-
-Alternatively, run it directly with `uvx` without installing:
-
-```bash
-uvx --from csv-diff-py csvdiff file1.csv file2.csv
-```
+Use this when you need to:
+- Compare two CSV files and see what changed between them, especially for large datasets.
+- Generate a unified diff file for tracking changes in tabular data.
 
 ## Quick start
 
@@ -39,11 +23,10 @@ csvdiff old.csv new.csv
 
 This will generate a `result.diff` file showing the differences.
 
-### View help
+## Documentation
 
-```bash
-csvdiff --help
-```
+- Run `csvdiff --help` to see available options and usage.
+- Read the [documentation](https://github.com/fityannugroho/csv-diff) for more details.
 
 ## Output
 
@@ -66,5 +49,19 @@ The output shows:
 
 ## Notes
 
-- CSV files must have a header row
-- Output is saved to a `.diff` file (default: `result.diff`)
+- CSV files must have a header row.
+- Output is saved to a `.diff` file (default: `result.diff`).
+
+## Requirements
+
+The `csv-diff-py` package must be installed in your environment. You can install it globally via `uv` (or user-preferred python package manager):
+
+```bash
+uv tool install csv-diff-py
+```
+
+Alternatively, run it directly with `uvx` (or user-preferred python package runner):
+
+```bash
+uvx --from csv-diff-py csvdiff file1.csv file2.csv
+```
