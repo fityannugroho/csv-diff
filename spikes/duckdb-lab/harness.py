@@ -114,10 +114,7 @@ def build_note(rec: dict, lines1: list[str], lines2: list[str], raw: list[str]) 
             "fields both serialize to empty) - see doc section 4"
         )
     if rec["lines_equal_1v2"]:
-        return (
-            f"lines identical but column structure differs: "
-            f"duckdb cols={r1['cols']} stdlib cols={r2['cols']}"
-        )
+        return f"lines identical but column structure differs: duckdb cols={r1['cols']} stdlib cols={r2['cols']}"
     fd = rec["first_diff"]
     fid1 = fidelity_vs_raw(lines1, raw)
     fid2 = fidelity_vs_raw(lines2, raw)
@@ -173,9 +170,7 @@ def main() -> None:
         r2 = "ok" if rec["reader2"]["ok"] else "ERR"
         eq = "equal" if rec["lines_equal_1v2"] else "DIFF"
         cols = "equal" if rec["cols_equal"] else "DIFF"
-        print(
-            f"{rec['fixture']:<30} {r1:<6}  {r2:<6}  {eq:<9}  {cols:<8} {rec['note']}"
-        )
+        print(f"{rec['fixture']:<30} {r1:<6}  {r2:<6}  {eq:<9}  {cols:<8} {rec['note']}")
 
 
 if __name__ == "__main__":
