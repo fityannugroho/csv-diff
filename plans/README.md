@@ -14,9 +14,10 @@ row when done.
 |------|-------|----------|--------|------------|--------|
 | 001  | Reject CSV files with embedded-newline cells so .diff stays line-oriented | P1 | S | — | DONE |
 | 002  | ~~Reject an existing directory as `--output` instead of writing `dir (1)`~~ | — | — | — | REJECTED |
-| 003  | Align Python-version claims (>=3.10) and add a CI version matrix | P2 | S | — | BLOCKED (STOP: ruff UP045 `Optional[bool]` at src/csvdiff/cli.py:73 exposed by py310 target; fix out of scope, follow-up plan needed) |
+| 003  | Align Python-version claims (>=3.10) and add a CI version matrix | P2 | S | 006 | DONE (combined-tree re-check with 006 one-liner: ruff check --no-fix passes) |
 | 004  | Make the lint gate fail honestly and fix broken documented commands | P2 | S | — | DONE |
-| 005  | Spike: can the duckdb read path be replaced by stdlib CSV? | P2 | M | 001 | TODO |
+| 005  | Spike: can the duckdb read path be replaced by stdlib CSV? | P2 | M | 001 | IN PROGRESS |
+| 006  | Fix UP045 (`Optional[bool]` → `bool | None`) to unblock plan 003 | P1 | S | — | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
