@@ -17,5 +17,6 @@
 - Test both success paths and all error paths.
 
 ## Coverage
-- Source coverage tracked in `src/` (configured in `pytest.ini`).
+- Run `uv run pytest --cov=csvdiff --cov-report=term-missing` to see source
+  coverage (provided by the `pytest-cov` dev dependency).
 - All error paths should be tested.
