@@ -4,7 +4,7 @@
 A Python CLI tool for comparing two CSV files and displaying differences in `git diff` style. The tool computes unified diffs, and outputs results to `.diff` files.
 
 ## Tech Stack
-- **Language:** Python 3.8+
+- **Language:** Python 3.10+
 - **Package Manager:** `uv`
 - **CLI Framework:** `typer`
 - **Data Processing:** `duckdb`
