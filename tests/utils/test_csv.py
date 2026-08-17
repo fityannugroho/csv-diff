@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import pytest
 
-from csvdiff.utils.csv import read_csv_with_duckdb
+from csvdiff.utils.csv import read_csv_with_duckdb, validate_single_line_rows
 
 
 def test_read_csv_with_duckdb_basic(tmp_path):
@@ -75,3 +77,14 @@ def test_read_csv_with_embedded_newlines(tmp_path):
     assert len(lines) == 1
     # The newline should be preserved inside the quoted field
     assert "\n" in lines[0]
+
+
+def test_validate_single_line_rows_ok():
+    """Plain single-line rows must pass without raising."""
+    validate_single_line_rows(["1,2", "3,4"], Path("file.csv"))
+
+
+def test_validate_single_line_rows_rejects():
+    """A row with an embedded newline must raise ValueError with the row number."""
+    with pytest.raises(ValueError, match="CSV row 4 contains an embedded newline"):
+        validate_single_line_rows(["1,2", "3,4", '"line1\nline2",x'], Path("file.csv"))

@@ -94,3 +94,19 @@ def read_csv_with_duckdb(file_path: Path) -> tuple[list[str], list[str]]:
                 temp_file_path.unlink()
             except Exception:
                 pass
+
+
+def validate_single_line_rows(lines: list[str], file_path: Path) -> None:
+    """Raise ValueError if any serialized row contains an embedded line break.
+
+    A quoted CSV field may legally contain a literal newline (``\n``) or
+    carriage return (``\r``). Such a row would be written across several
+    physical lines in the .diff output, corrupting its line structure.
+    """
+    for i, line in enumerate(lines, start=2):  # row index in file (1 = header)
+        if "\n" in line or "\r" in line:
+            raise ValueError(
+                f"CSV row {i} contains an embedded newline inside a quoted field, "
+                "which cannot be represented as a line-based diff. "
+                "Remove the line break from the field and try again."
+            )
