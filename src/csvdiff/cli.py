@@ -2,7 +2,7 @@ import time
 from difflib import unified_diff
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -70,7 +70,7 @@ def compare(
         ),
     ] = Path("result.diff"),
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version", "-v", callback=version_option_callback, is_eager=True, help="Show the version of this package."
         ),
