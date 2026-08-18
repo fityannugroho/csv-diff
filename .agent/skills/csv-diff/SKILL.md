@@ -50,6 +50,7 @@ The output shows:
 ## Notes
 
 - CSV files must have a header row.
+- CSV files with multi-line cell values (embedded newlines inside quoted fields) are rejected, because they cannot be represented as a valid line-based diff.
 - Output is saved to a `.diff` file (default: `result.diff`).
 
 ## Requirements

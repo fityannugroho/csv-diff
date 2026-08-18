@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from csvdiff.utils.csv import read_csv_with_duckdb
+from csvdiff.utils.csv import read_csv_with_duckdb, validate_single_line_rows
 from csvdiff.utils.files import create_unique_output_file
 from csvdiff.utils.validation import validate_csv_file, validate_output_path
 
@@ -104,6 +104,14 @@ def compare(
             if not lines2:
                 typer.secho(f"Error: Second CSV file '{file2}' contains no data.", fg=typer.colors.RED, err=True)
                 raise typer.Exit(1)
+
+        # Validate rows are single-line before computing a line-based diff
+        try:
+            validate_single_line_rows(lines1, file1)
+            validate_single_line_rows(lines2, file2)
+        except ValueError as e:
+            typer.secho(f"Error: {e}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1)
 
         # Check column structures (outside spinner for clean messages)
         if cols1 != cols2:

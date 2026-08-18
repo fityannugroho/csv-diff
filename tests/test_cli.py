@@ -230,6 +230,21 @@ def test_compare_custom_extension_log(in_tmp_path):
     assert "Success" in result.output
 
 
+def test_compare_rejects_multiline_cell(in_tmp_path):
+    """A CSV cell with an embedded newline must fail with a clear error,
+    not produce a structurally broken .diff file."""
+    # file1 has a multi-line cell; file2 is a plain one-row file
+    file1 = create_temp_csv('a,b\n"line1\nline2",x', in_tmp_path, "multiline.csv")
+    file2 = create_temp_csv("a,b\n1,x", in_tmp_path, "plain.csv")
+
+    result = runner.invoke(app, [str(file1), str(file2), "-o", "out.diff"])
+
+    assert result.exit_code != 0
+    assert "embedded newline" in result.output
+    # No partial/corrupt output file may be created
+    assert not (in_tmp_path / "out.diff").exists()
+
+
 def test_compare_rejects_directory_as_output(in_tmp_path):
     """Test that Typer rejects directory paths for --output parameter."""
     create_temp_csv("a,b\n1,2", in_tmp_path, "file1.csv")
