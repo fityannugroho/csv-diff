@@ -11,9 +11,6 @@ exclude = [
     "dist",
 ]
 
-# Auto fix
-fix = true
-
 [lint]
 # Enable Pyflakes (F), pycodestyle errors (E), and isort (I) by default
 select = ["E", "F", "I", "N", "UP", "B"]
