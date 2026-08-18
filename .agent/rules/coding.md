@@ -12,7 +12,7 @@
 
 ## Code Style & Quality
 - Use docstrings for all public functions. Focus on the *why* rather than the *what* for complex logic.
-- Use Python 3.9+ compatible type hinting syntax.
+- Use Python 3.10+ compatible type hinting syntax (the package floor).
 - Use `Optional[T]` from `typing` for optional types.
 - Annotate all function signatures.
 
